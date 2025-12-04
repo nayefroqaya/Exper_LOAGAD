@@ -88,12 +88,20 @@ def generate_embeddings_fasttext(templates: List[str], strategy: str = 'average'
         X = vectorizer.fit_transform(clean_templates)
         tfidf = transformer.fit_transform(X)
         tfidf = tfidf.toarray()
-        words = vectorizer.get_feature_names()
+        words = vectorizer.get_feature_names_out()    #get_feature_names()
         single_weights = []
         for i, (template, k) in enumerate(templates):
-            for word in template.strip().split():
-                if word in words:
-                    single_weights.append(tfidf[i][words.index(word)])
+
+
+            single_weights = []  # reset for each template
+            template_words = template.strip().split()
+            for word in template_words:
+        #    for word in template.strip().split():
+#                if word in words:
+                idx = np.where(words == word)[0]
+                if len(idx) > 0:
+#                    single_weights.append(tfidf[i][words.index(word)])
+                     single_weights.append(tfidf[i][idx[0]])  # first match
                 else:
                     single_weights.append(0)
             embeddings[k] = np.mean(log_key2vec(template, single_weights), axis=0).tolist()
@@ -122,9 +130,20 @@ def load_embeddings_fasttext(embedding_path: str) -> dict:
 if __name__ == '__main__':
     dataset = sys.argv[1]
     strategy = sys.argv[2]
+
     print(f'Generating embeddings for {dataset} using {strategy}...')
     template_df = pd.read_csv(f'./{dataset}/{dataset}.log_templates.csv')
     templates = template_df['EventTemplate'].tolist()
     embeddings = generate_embeddings_fasttext(templates, strategy=strategy)
     with open(f'./{dataset}/{dataset}.log_embeddings_{strategy}.json', 'w') as f:
         json.dump(embeddings, f)
+
+
+
+
+#    print(f'Generating embeddings for {dataset} using {strategy}...')
+#    template_df = pd.read_csv(dataset+ '.log_templates.csv')
+#    templates = template_df['EventTemplate'].tolist()
+#    embeddings = generate_embeddings_fasttext(templates, strategy=strategy)
+#    with open(dataset+ '.log_embeddings_{strategy}.json', 'w') as f:
+#        json.dump(embeddings, f)

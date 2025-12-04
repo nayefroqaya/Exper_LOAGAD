@@ -124,6 +124,35 @@ class Trainer:
             return loss, acc, 1
 
     def train(self, device: str = 'cpu', save_dir: str = None, model_name: str = None, topk: int = 1):
+
+        def collate_fn(batch_list):
+           """
+           Converts a list of dicts into a dict of tensors.
+           """
+           collated = {}
+          
+    
+           # If tuple has 1 element, it's just the sequence
+           if isinstance(batch_list[0], tuple) and len(batch_list[0]) == 1:
+               collated["sequential"] = torch.tensor([item[0] for item in batch_list])
+           # If tuple has 2 elements, assume (sequence, label)
+           elif isinstance(batch_list[0], tuple) and len(batch_list[0]) == 2:
+               collated["sequential"] = torch.tensor([item[0] for item in batch_list])
+               collated["label"] = torch.tensor([item[1] for item in batch_list])
+           else:
+               raise ValueError("Unexpected dataset item format")
+    
+           return collated
+
+
+
+#           for key in batch_list[0].keys():
+#               # Stack values along batch dimension
+#               collated[key] = torch.tensor([item[key] for item in batch_list])
+#           return collated
+
+
+
         train_loader = DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True)  # ,# num_workers=5,
         # collate_fn=self.train_dataset.collate_fn)
         val_loader = DataLoader(self.valid_dataset, batch_size=self.batch_size)  # ,# num_workers=5,

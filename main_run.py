@@ -7,8 +7,9 @@ from random import seed
 import torch
 import yaml
 from sklearn.utils import shuffle
+from logadempirical.data.data_loader import process_dataset
 
-from logadempirical.data import process_dataset
+#from logadempirical.data import process_dataset
 from logadempirical.data.vocab import Vocab
 from logadempirical.data.feature_extraction import load_features, sliding_window
 from logadempirical.data.dataset import LogDataset, MaskedDataset
@@ -59,10 +60,24 @@ def build_vocab(vocab_path: str,
     if not os.path.exists(vocab_path):
         with open(train_path, 'rb') as f:
             data = pickle.load(f)
+
+        print("DEBUG sample item:", data[0])
+        print("AVAILABLE KEYS:", data[0].keys())
+#        exit()
+ 
         if is_unsupervised:
-            logs = [x['EventTemplate'] for x in data if np.max(x['Label']) == 0]
+#            logs = [x['EventTemplate'] for x in data if np.max(x['Label']) == 0]
+
+             # Access nested 'sequential' dictionary for EventTemplate and Label
+             logs = [
+                 x['sequential']['EventTemplate']
+                 for x in data
+                 if np.max(x['sequential']['Label']) == 0
+             ]
+
+
         else:
-            logs = [x['EventTemplate'] for x in data]
+            logs = [x['sequential']['EventTemplate'] for x in data]
         vocab = Vocab(logs, os.path.join(data_dir, embeddings), embedding_dim=embedding_dim)
         logger.info(f"Vocab size: {len(vocab)}")
         logger.info(f"Save vocab in {vocab_path}")
@@ -198,7 +213,9 @@ def train_and_eval(args: argparse.Namespace,
     if args.model_name == "LogBERT":
         train_dataset = MaskedDataset(sequentials=sequentials, vocab=vocab, seq_len=32, idx=idxs)
     else:
-        logger.info(f"Train dataset: {len(sequentials)}")
+        logger.info(f"Train dataset: {0 if sequentials is None else len(sequentials)}")
+
+#        logger.info(f"Train dataset: {len(sequentials)}")
         train_dataset = LogDataset(sequentials=sequentials, quantitatives=quantitatives, semantics=semantics,
                                    is_unsupervised=is_unsupervised, labels=labels, idxs=idxs,
                                    remove_duplicates=args.remove_duplicates)
@@ -392,5 +409,11 @@ if __name__ == "__main__":
             for k, v in config_args.__dict__.items():
                 if v is not None:
                     setattr(args, k, v)
-        print(f"Loaded config from {config_file}!")
+    print(f"Loaded config from {config_file}!")
+    print("========== ARGUMENTS LOADED ==========")
+    for k, v in vars(args).items():
+        print(f"{k}: {v}")
+    print("======================================")
+#    exit()
+
     run(args)

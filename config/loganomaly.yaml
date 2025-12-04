@@ -1,7 +1,7 @@
 # dataset configuration
-data_dir: ./dataset/HDFS
-dataset_name: HDFS
-log_file: HDFS.log
+data_dir: ./dataset/BGL
+dataset_name: BGL
+log_file: BGL.log
 embeddings: embeddings_average.json
 
 # data preprocessing
@@ -39,7 +39,7 @@ max_epoch: 20
 output_dir: ./output/
 resume: false
 step_size: 20
-train_size: 0.1
+train_size: 0.6 #0.1
 valid_ratio: 0.1
 window_size: 20
 train: true 

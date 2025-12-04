@@ -6,6 +6,7 @@ from .bert import BERT
 from typing import Optional
 from logadempirical.models.utils import ModelOutput
 from torch.nn import LogSoftmax
+from torch.nn.utils.rnn import pad_sequence
 
 
 class BERTLog(nn.Module):
@@ -33,26 +34,83 @@ class BERTLog(nn.Module):
         # self.result = {"logkey_output": None, "cls_output": None, }
 
     def forward(self, batch, time_info=None, device="cpu"):
+        """
+           Robust LogBERT forward pass.
+           Handles variable-length sequences, segment_info, time_info, and optional labels.
+           """
+        # --- Ensure batch is a dict ---
+        if isinstance(batch, (list, tuple)):
+            batch_dict = {"sequential": batch[0]}
+            if len(batch) > 1:
+                batch_dict["label"] = batch[1]
+            if len(batch) > 2:
+                batch_dict["segment_info"] = batch[2]
+            batch = batch_dict
+
+        # --- Process sequences ---
         x = batch["sequential"]
-        try:
-            y = batch['label']
-            y = y
-        except KeyError:
-            y = None
-        x = self.bert(x, time_info=time_info)
+        if isinstance(x, list):
+            sequences = [torch.tensor(seq, dtype=torch.long, device=device) for seq in x]
+            x = pad_sequence(sequences, batch_first=True, padding_value=0)
+        elif isinstance(x, torch.Tensor):
+            x = x.to(device)
+        else:
+            raise TypeError(f"Unsupported type for batch['sequential']: {type(x)}")
+
+        batch_size, seq_len = x.size()
+
+        # --- Process segment_info ---
+        if "segment_info" in batch and batch["segment_info"] is not None:
+            segs = [torch.tensor(s, dtype=torch.long, device=device) for s in batch["segment_info"]]
+            segment_info = pad_sequence(segs, batch_first=True, padding_value=0)
+            # Match x's length
+            diff = seq_len - segment_info.size(1)
+            if diff > 0:
+                segment_info = torch.cat(
+                    [segment_info, torch.zeros(segment_info.size(0), diff, device=device, dtype=torch.long)], dim=1)
+            else:
+                segment_info = segment_info[:, :seq_len]
+        else:
+            segment_info = torch.zeros_like(x, dtype=torch.long)
+
+        # --- Process time_info ---
+        if time_info is not None:
+            if isinstance(time_info, list):
+                times = [torch.tensor(t, dtype=torch.float, device=device) for t in time_info]
+                time_info = pad_sequence(times, batch_first=True, padding_value=0.0)
+            elif isinstance(time_info, torch.Tensor):
+                time_info = time_info.to(device)
+            else:
+                raise TypeError(f"Unsupported type for time_info: {type(time_info)}")
+            # Match x's length
+            diff = seq_len - time_info.size(1)
+            if diff > 0:
+                time_info = torch.cat([time_info, torch.zeros(time_info.size(0), diff, device=device)], dim=1)
+            else:
+                time_info = time_info[:, :seq_len]
+        else:
+            time_info = torch.zeros_like(x, dtype=torch.float)
+
+        # --- Process labels ---
+        y = batch.get('label', None)
+        if y is not None:
+            if isinstance(y, list):
+                y = torch.tensor(y, dtype=torch.long, device=device)
+            elif isinstance(y, torch.Tensor):
+                y = y.to(device)
+
+        # --- Forward pass through BERT ---
+        x = self.bert(x, segment_info=segment_info, time_info=time_info)
         x = self.mask_lm(x)
         logits = self.fc2(x)
         probabilities = torch.softmax(x, dim=-1)
 
-        # self.result["logkey_output"] = self.mask_lm(x)
-
-        # self.result["cls_output"] = x[:, 0]
+        # --- Loss calculation ---
         loss = None
-        # logits = logits.view(-1).type(torch.FloatTensor)
-        # y = y.view(-1).type(torch.FloatTensor)
-        # pdb.set_trace()
         if y is not None and self.criterion is not None:
             loss = self.criterion(x.transpose(1, 2).type(torch.FloatTensor), y.type(torch.LongTensor))
+
+        # --- Return output ---
         return ModelOutput(logits=logits, probabilities=probabilities, loss=loss, embeddings=x)
 
     def save(self, path):
