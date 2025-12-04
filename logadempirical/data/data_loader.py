@@ -105,17 +105,34 @@ def process_dataset(logger: Logger,
     else:
         raise NotImplementedError(f"{grouping} is not implemented")
 
+    # Convert each sequence to a dict for LogBERT
+    train_window = [{"sequential": seq} for seq in train_window]
+    test_window = [{"sequential": seq} for seq in test_window]
+
     os.makedirs(output_dir, exist_ok=True)
     with open(os.path.join(output_dir, "train.pkl"), mode="wb") as f:
         pickle.dump(train_window, f)
     with open(os.path.join(output_dir, "test.pkl"), mode="wb") as f:
         pickle.dump(test_window, f)
+
     return os.path.join(output_dir, "train.pkl"), os.path.join(output_dir, "test.pkl")
+
+
+
+##    train_window = [{"sequential": seq} for seq in train_window]
+##    test_window = [{"sequential": seq} for seq in test_window]
+
+#    os.makedirs(output_dir, exist_ok=True)
+#    with open(os.path.join(output_dir, "train.pkl"), mode="wb") as f:
+#        pickle.dump(train_window, f)
+#    with open(os.path.join(output_dir, "test.pkl"), mode="wb") as f:
+#        pickle.dump(test_window, f)
+#    return os.path.join(output_dir, "train.pkl"), os.path.join(output_dir, "test.pkl")
 
 
 if __name__ == '__main__':
     process_dataset(Logger("BGL"),
                     data_dir="../../dataset/", output_dir="../../dataset/", log_file="BGL.log",
                     dataset_name="bgl",
-                    grouping="sliding", window_size=10, step_size=10, train_size=0.8, is_chronological=True,
+                    grouping="sliding", window_size=10, step_size=10, train_size=0.70, is_chronological=True,
                     session_type="entry")
