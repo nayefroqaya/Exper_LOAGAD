@@ -1,0 +1,56 @@
+# ===============================
+# Dataset configuration
+# ===============================
+data_dir: ./dataset/BGL
+dataset_name: BGL
+log_file: BGL.log
+embeddings: embeddings_average.json
+
+# Data preprocessing
+grouping: session
+session_level: entry
+sequential: true          # LogBERT requires sequential modeling
+semantic: true
+quantitative: true        # You used --quantitative
+window_size: 20
+step_size: 1
+history_size: 30
+
+# ===============================
+# Model configuration
+# ===============================
+model_name: LogBERT
+
+# Transformer parameters
+num_layers: 2
+hidden_size: 60
+embedding_dim: 60
+num_heads: 5
+dropout: 0.1
+topk: 10
+
+# ===============================
+# Optimizer configuration
+# ===============================
+optimizer: adamw
+lr: 0.001
+weight_decay: 0.0
+epsilon: 1.0e-08
+accumulation_step: 1
+
+# ===============================
+# Training configuration
+# ===============================
+batch_size: 2048
+max_epoch: 10
+train_size: 0.6
+valid_ratio: 0.1
+is_chronological: true     # Corresponds to --is_chronological
+train: true
+
+# ===============================
+# Common configuration
+# ===============================
+output_dir: ./output/
+resume: false
+
