@@ -3,11 +3,18 @@ import pickle
 from tqdm import tqdm
 from typing import List, Tuple, Optional, Any
 import numpy as np
+import pandas as pd
 
 
 def load_features(data_path, is_unsupervised=True, min_len=0, is_train=True):
     with open(data_path, 'rb') as f:
         data = pickle.load(f)
+    # If it's a DataFrame, show the columns
+#    xx = pd.DataFrame(data)
+#    print(xx.columns)
+
+    #print(data.columns)
+#    exit()
 
     logs = []
     no_abnormal = 0

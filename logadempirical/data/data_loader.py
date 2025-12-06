@@ -182,6 +182,12 @@ def process_dataset(logger: Logger,
             n_train = int(len(window_df) * train_size)
             train_window = window_df[:n_train]
             test_window = window_df[n_train:]
+
+#            print(train_window)
+#            test_window.info()
+#            exit()
+
+
         else:
             train_window = sliding(
                 df[["Timestamp", "Label", "EventId", "EventTemplate", "Content"]].iloc[:n_train, :],
@@ -194,6 +200,10 @@ def process_dataset(logger: Logger,
                 window_size=window_size,
                 step_size=step_size
             )
+ #           print(train_window)
+ #           test_window.info()
+ #           exit()
+
             pdb.set_trace()
 
     elif grouping == "session":
@@ -212,6 +222,10 @@ def process_dataset(logger: Logger,
             n_train = int(len(window_df) * train_size)
             train_window = window_df[:n_train]
             test_window = window_df[n_train:]
+ #           train_window.info()
+ #           test_window.info()
+ #           exit()
+
             # train_window = session_window(train_df, id_regex, label_dict, window_size=int(window_size))
             # test_window = session_window(df, id_regex, label_dict, window_size=int(window_size))
         elif dataset_name == "BGL":
@@ -220,6 +234,10 @@ def process_dataset(logger: Logger,
             n_train = int(len(window_df) * train_size)
             train_window = window_df[:n_train]
             test_window = window_df[n_train:]
+  #          train_window.info()
+  #          test_window.info()
+  #          exit()
+
         else:
             raise NotImplementedError(f"{dataset_name} with {grouping} is not implemented")
     else:
