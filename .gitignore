@@ -1,9 +1,27 @@
+<<<<<<< HEAD
 # macOS
 .DS_Store
 
 # PyCharm
+=======
+# macOS system files
+.DS_Store
+
+# IDE/editor settings
+>>>>>>> 2ab008a (Add .gitignore to ignore IDE, cache, datasets, logs)
 .idea/
 
 # Python cache
 __pycache__/
 *.pyc
+<<<<<<< HEAD
+=======
+
+# Local datasets
+dataset/
+output/
+
+# Logs or temporary files
+*.log
+
+>>>>>>> 2ab008a (Add .gitignore to ignore IDE, cache, datasets, logs)
