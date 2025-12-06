@@ -369,12 +369,19 @@ def run(args):
         args.output_dir = f"{args.output_dir}/{args.dataset_name}/sliding/W{args.window_size}_S{args.step_size}_C{args.is_chronological}_train{args.train_size}"
     else:
         args.output_dir = f"{args.output_dir}/{args.dataset_name}/session/train{args.train_size}"
-    train_path, test_path = process_dataset(logger, data_dir=args.data_dir, output_dir=args.output_dir,
-                                            log_file=args.log_file,
-                                            dataset_name=args.dataset_name, grouping=args.grouping,
-                                            window_size=args.window_size, step_size=args.step_size,
-                                            train_size=args.train_size, is_chronological=args.is_chronological,
-                                            session_type=args.session_level)
+
+    train_path, test_path = process_dataset_from_df(logger=logger, df_train=df_train, df_test=df_test, output_dir=output_dir,
+        grouping="sliding",  # or "session for HDFS"
+        window_size=120, step_size=120, session_type="entry",  # or "time"
+        dataset_name="BGL",  # or "BGL"
+        data_dir="../../dataset/"  # needed only for session mode (HDFS)
+    )
+    #train_path, test_path = process_dataset(logger, data_dir=args.data_dir, output_dir=args.output_dir,
+    #                                        log_file=args.log_file,
+    #                                        dataset_name=args.dataset_name, grouping=args.grouping,
+    #                                        window_size=args.window_size, step_size=args.step_size,
+    #                                        train_size=args.train_size, is_chronological=args.is_chronological,
+    #                                        session_type=args.session_level)
 
     # pdb.set_trace()
 
