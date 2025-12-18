@@ -1,7 +1,8 @@
 import os
 import pickle
 from collections import Counter
-
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = ""   # ⛔ Disable GPU completely
 from random import seed
 
 import torch
@@ -406,6 +407,14 @@ def run(args):
 
 
 if __name__ == "__main__":
+    RESET = colorama.Fore.RESET
+
+    # ---------------- Device setup (CPU ONLY) ----------------
+    device = torch.device("cpu")
+    torch.backends.cudnn.enabled = False
+    torch.backends.cuda.enabled = False
+    print(f"Using device: CPU only{RESET}")
+
     parser = arg_parser()
     args = parser.parse_args()
     if args.config_file is not None and os.path.exists(args.config_file):
