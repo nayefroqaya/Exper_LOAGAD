@@ -240,7 +240,7 @@ if __name__ == '__main__':
     #                dataset_name="bgl",
     #                grouping="sliding", window_size=10, step_size=10, train_size=0.8, is_chronological=True,
     #                session_type="entry")∂ƒ√
-    output_dir = "../../dataset/BGL/"  # change to your preferred output folder
+    output_dir = "/storage/home/roqaya/Exper_LOAGAD/output"  # change to your preferred output folder
     process_dataset_from_df(logger=logger, df_train=df_train, df_test=df_test, output_dir=output_dir,
         grouping="sliding",  # or "session for HDFS"
         window_size=120, step_size=120, session_type="entry",  # or "time"
