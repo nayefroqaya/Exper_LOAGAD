@@ -1,1 +1,1 @@
-from .data_loader import process_dataset
+from .data_loader import process_dataset_from_df

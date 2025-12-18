@@ -1,14 +1,18 @@
 import os
 import pickle
 from collections import Counter
+#<<<<<<< HEAD
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = ""   # ⛔ Disable GPU completely
+#=======
+import pandas as pd
+#>>>>>>> 6198c6c (update dataset portion)
 from random import seed
 
 import torch
 import yaml
 from sklearn.utils import shuffle
-from logadempirical.data.data_loader import process_dataset
+from logadempirical.data.data_loader import process_dataset_from_df  #process_dataset
 
 #from logadempirical.data import process_dataset
 from logadempirical.data.vocab import Vocab
@@ -67,18 +71,27 @@ def build_vocab(vocab_path: str,
 #        exit()
  
         if is_unsupervised:
+           logs = [
+               x['EventTemplate']
+               for x in data
+               if np.max(x['Label']) == 0
+           ]
+
+        else:
+                logs = [x['EventTemplate'] for x in data]
+
 #            logs = [x['EventTemplate'] for x in data if np.max(x['Label']) == 0]
 
              # Access nested 'sequential' dictionary for EventTemplate and Label
-             logs = [
-                 x['sequential']['EventTemplate']
-                 for x in data
-                 if np.max(x['sequential']['Label']) == 0
-             ]
+##             logs = [
+ ##                x['sequential']['EventTemplate']
+  ##               for x in data
+   ##              if np.max(x['sequential']['Label']) == 0
+     ##        ]
 
 
-        else:
-            logs = [x['sequential']['EventTemplate'] for x in data]
+       ## else:
+        ##    logs = [x['sequential']['EventTemplate'] for x in data]
         vocab = Vocab(logs, os.path.join(data_dir, embeddings), embedding_dim=embedding_dim)
         logger.info(f"Vocab size: {len(vocab)}")
         logger.info(f"Save vocab in {vocab_path}")
@@ -371,6 +384,27 @@ def run(args):
     else:
         args.output_dir = f"{args.output_dir}/{args.dataset_name}/session/train{args.train_size}"
 
+
+    file_path_train = 'dataset/BGL/1_BGL_Splitted_Datasets/train_df.pkl'
+    file_path_test = 'dataset/BGL/1_BGL_Splitted_Datasets/test_df.pkl'
+
+    # Read pickle file
+    df_train = pd.read_pickle(file_path_train)
+    df_test = pd.read_pickle(file_path_test)
+  #  df_train = df_train.rename(columns={'processed_EventTemplate': 'EventTemplate'})
+  #  df_test = df_test.rename(columns={'processed_EventTemplate': 'EventTemplate'})
+    print(' In run function ......')
+    df_train.info()
+    df_test.info()
+    df_train = df_train.drop(columns=['Label'])
+    df_test = df_test.drop(columns=['Label'])
+    df_train = df_train.rename(columns={'Original_Label': 'Label'})
+    df_test = df_test.rename(columns={'Original_Label': 'Label'})
+    df_train.info()
+    df_test.info()
+#    exit()
+
+    output_dir = "/storage/home/roqaya/Exper_LOAGAD/output" #output_dir = "../../dataset/BGL/" 
     train_path, test_path = process_dataset_from_df(logger=logger, df_train=df_train, df_test=df_test, output_dir=output_dir,
         grouping="sliding",  # or "session for HDFS"
         window_size=120, step_size=120, session_type="entry",  # or "time"
