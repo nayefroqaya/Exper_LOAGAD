@@ -87,7 +87,7 @@ def load_features(data_path, only_normal=True, min_len=0):
         print("Number of abnormal sessions:", no_abnormal)
     return logs
 
-def sliding_window_test(data_iter, window_size=10, is_train=True, id2temp={}, idx=0):
+def sliding_window_test(data_iter, window_size=120, is_train=True, id2temp={}, idx=0):
 
     # event2semantic_vec = read_json("dataset/BGL/embeddings.json")
     result_logs = []
@@ -135,7 +135,7 @@ def sliding_window_test(data_iter, window_size=10, is_train=True, id2temp={}, id
     return result_logs, labels, num_seq
 
 
-def sliding_window(data_iter, window_size=10, is_train=True, id2temp={}, idx=0):
+def sliding_window(data_iter, window_size=120, is_train=True, id2temp={}, idx=0):
 
     # event2semantic_vec = read_json("dataset/BGL/embeddings.json")
     result_logs = []

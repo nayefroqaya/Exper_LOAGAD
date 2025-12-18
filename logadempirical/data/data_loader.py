@@ -239,7 +239,7 @@ if __name__ == '__main__':
     #                data_dir="../../dataset/", output_dir="../../dataset/", log_file="BGL.log",
     #                dataset_name="bgl",
     #                grouping="sliding", window_size=10, step_size=10, train_size=0.8, is_chronological=True,
-    #                session_type="entry")
+    #                session_type="entry")∂ƒ√
     output_dir = "../../dataset/BGL/"  # change to your preferred output folder
     process_dataset_from_df(logger=logger, df_train=df_train, df_test=df_test, output_dir=output_dir,
         grouping="sliding",  # or "session for HDFS"

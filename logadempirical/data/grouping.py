@@ -62,7 +62,7 @@ def session_window_bgl(raw_data):
     return results
 
 
-def time_sliding_window(raw_data, window_size=60, step_size=60):
+def time_sliding_window(raw_data, window_size=120, step_size=120):
     """
     split logs into sliding windows/session
     :param raw_data: dataframe columns=[timestamp, label, eventid, time duration]
