@@ -283,11 +283,17 @@ def train_and_eval(args: argparse.Namespace,
         logger.info(f"Loading model from {args.output_dir}/models/{args.model_name}.pt...")
         trainer.load_model(f"{args.output_dir}/models/{args.model_name}.pt")
     args.train = True
+
+    start_train_time = time.time()  # Start timer
     if args.train:
         train_loss, val_loss, val_acc, args.topk = trainer.train(device=device,
                                                                  save_dir=f"{args.output_dir}/models",
                                                                  model_name=args.model_name,
                                                                  topk=1 if not is_unsupervised else args.topk)
+
+        train_time_min = (time.time() - start_train_time) / 60
+        logger.info(f"Training completed in {train_time_min:.2f} minutes")
+
         logger.info(f"Train Loss: {train_loss:.4f} - Val Loss: {val_loss:.4f} - Val Acc: {val_acc:.4f}")
     if args.model_name == "LogBERT":
         # print("len" ,len(valid_dataset_abnormal))
@@ -297,6 +303,7 @@ def train_and_eval(args: argparse.Namespace,
         acc, pre, rec, f1 = predict(trainer.model.to(device), abnormal_dataset=valid_dataset_abnormal,
                                     normal_dataset=valid_dataset_normal, device=device)
         print(f"Validation Result:: Acc: {acc:.4f}, Precision: {pre:.4f}, Recall: {rec:.4f}, F1: {f1:.4f}")
+
     elif is_unsupervised:
         acc, recommend_topk = trainer.predict_unsupervised(valid_dataset,
                                                            session_labels,
@@ -358,8 +365,10 @@ def train_and_eval(args: argparse.Namespace,
     test_dataset = LogDataset(sequentials=sequentials, quantitatives=quantitatives, semantics=semantics,
                               labels=labels, idxs=sequence_idxs, is_unsupervised=is_unsupervised)
     logger.info(f"Test dataset: {len(test_dataset)}")
+    start_test_time = time.time()
     if is_unsupervised:
         logger.info(f"Start predicting {args.model_name} model on {device} device with top-{args.topk} recommendation")
+
         acc, f1, pre, rec = trainer.predict_unsupervised(test_dataset,
                                                          session_labels,
                                                          topk=args.topk,
@@ -367,11 +376,15 @@ def train_and_eval(args: argparse.Namespace,
                                                          is_valid=False,
                                                          num_sessions=num_sessions)
     else:
+        start_test_time = time.time()
         acc, f1, pre, rec = trainer.predict_supervised(test_dataset,
                                                        session_labels,
                                                        device=device)
+    test_time = (time.time() - start_test_time) / 60  # in minutes
+    logger.info(f"Testing completed in {test_time:.2f} minutes")
+
     logger.info(f"Test Result:: Acc: {acc:.4f}, Precision: {pre:.4f}, Recall: {rec:.4f}, F1: {f1:.4f}")
-    return acc, f1, pre, rec
+    return train_time_min, test_time_min, acc, f1, pre, rec
 
 
 def run(args):
@@ -432,13 +445,16 @@ def run(args):
                             is_unsupervised=is_unsupervised,
                             logger=logger)
     model = build_model(args, vocab_size=len(log_vocab))
-    train_and_eval(args,
+    train_time, test_time, acc, f1, precision, recall= train_and_eval(args,
                    train_path,
                    test_path,
                    log_vocab,
                    model,
                    is_unsupervised=is_unsupervised,
                    logger=logger)
+    print(f"Training time: {train_time:.2f} min")
+    print(f"Testing time: {test_time:.2f} min")
+    print(f"Test Accuracy: {acc:.4f}, F1: {f1:.4f}, Precision: {precision:.4f}, Recall: {recall:.4f}")
 
 
 if __name__ == "__main__":
