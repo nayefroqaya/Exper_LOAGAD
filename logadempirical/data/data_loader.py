@@ -10,11 +10,11 @@ import pdb
 # ---------------------------
 # 1. Load train_df and test_df
 # ---------------------------
-with open("train_df.pkl", "rb") as f:
-    df_train = pickle.load(f)
+#with open("train_df.pkl", "rb") as f:
+#    df_train = pickle.load(f)
 
-with open("test_df.pkl", "rb") as f:
-    df_test = pickle.load(f)
+#with open("test_df.pkl", "rb") as f:
+#    df_test = pickle.load(f)
 
 # ---------------------------
 # 2. Define logger (simple example)
@@ -58,10 +58,25 @@ def process_dataset_from_df(
     train_pkl = os.path.join(output_dir, "train.pkl")
     test_pkl  = os.path.join(output_dir, "test.pkl")
 
-    if os.path.exists(train_pkl) and os.path.exists(test_pkl):
-        logger.info("Loading existing train.pkl and test.pkl")
-        return train_pkl, test_pkl
+#    if os.path.exists(train_pkl) and os.path.exists(test_pkl):
+#        logger.info("Loading existing train.pkl and test.pkl")
+#        return train_pkl, test_pkl
 
+
+    print(' final data before start  benchmark ')
+
+    #df_train= df_train[["Timestamp", "Label", "EventId", "EventTemplate", "Content", "processed_EventTemplate"]]
+    #df_test= df_test[["Timestamp", "Label", "EventId", "EventTemplate", "Content", "processed_EventTemplate"]]
+
+    df_train = df_train[["Timestamp" , "Label", "EventId", "EventTemplate", "Content", "processed_EventTemplate"]].copy()
+#    df_train["processed_EventTemplate"] = df_train["processed_EventTemplate"]
+
+    df_test = df_test[["Timestamp", "Label", "EventId", "EventTemplate", "Content", "processed_EventTemplate"]].copy()
+#    df_test["processed_EventTemplate"] = df_test["processed_EventTemplate"]
+
+    df_train.info()
+    df_test.info()
+    #exit()
     # -----------------------------
     # SLIDING WINDOW MODE
     # -----------------------------
@@ -79,17 +94,22 @@ def process_dataset_from_df(
         else:
             raise ValueError("session_type must be 'entry' or 'time'")
 
+        train_window = sliding_fn(df_train, window_size=window_size, step_size=step_size)
+        test_window  = sliding_fn(df_test,  window_size=window_size, step_size=step_size)
+
+        '''
         train_window = sliding_fn(
-            df_train[["Label", "processed_EventTemplate", "Content"]],
+            df_train[["Label", "EventId", "EventTemplate", "Content", "processed_EventTemplate"]],
             window_size=window_size,
             step_size=step_size
         )
 
         test_window = sliding_fn(
-            df_test[["Label", "processed_EventTemplate", "Content"]],
+            df_test[["Label", "EventId", "EventTemplate", "Content", "processed_EventTemplate"]],
             window_size=window_size,
             step_size=step_size
         )
+        '''
 
     # -----------------------------
     # SESSION MODE
@@ -257,11 +277,16 @@ if __name__ == '__main__':
     #                data_dir="../../dataset/", output_dir="../../dataset/", log_file="BGL.log",
     #                dataset_name="bgl",
     #                grouping="sliding", window_size=10, step_size=10, train_size=0.8, is_chronological=True,
+#<<<<<<< HEAD
     #                session_type="entry")∂ƒ√
-    output_dir = "/storage/home/roqaya/Exper_LOAGAD/output"  # change to your preferred output folder
+#    output_dir = "/storage/home/roqaya/Exper_LOAGAD/output"  # change to your preferred output folder
+#=======
+    #                session_type="entry")
+    output_dir = "/storage/home/roqaya/Exper_LOAGAD/output"  #output_dir = "output"  # change to your preferred output folder
+#>>>>>>> 608a4fb (update dataset portion)
     process_dataset_from_df(logger=logger, df_train=df_train, df_test=df_test, output_dir=output_dir,
         grouping="sliding",  # or "session for HDFS"
         window_size=120, step_size=120, session_type="entry",  # or "time"
         dataset_name="BGL",  # or "BGL"
-        data_dir="../../dataset/"  # needed only for session mode (HDFS)
+        data_dir="output"  # needed only for session mode (HDFS)
     )
