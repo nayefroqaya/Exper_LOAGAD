@@ -384,7 +384,7 @@ def train_and_eval(args: argparse.Namespace,
     logger.info(f"Testing completed in {test_time:.2f} minutes")
 
     logger.info(f"Test Result:: Acc: {acc:.4f}, Precision: {pre:.4f}, Recall: {rec:.4f}, F1: {f1:.4f}")
-    return train_time_min, test_time_min, acc, f1, pre, rec
+    return start_train_time, test_time_min, acc, f1, pre, rec
 
 
 def run(args):
