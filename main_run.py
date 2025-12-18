@@ -1,6 +1,7 @@
 import os
 import pickle
 from collections import Counter
+import colorama
 #<<<<<<< HEAD
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = ""   # ⛔ Disable GPU completely
