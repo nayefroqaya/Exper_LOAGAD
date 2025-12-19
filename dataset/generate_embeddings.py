@@ -96,7 +96,6 @@ def generate_embeddings_fasttext(templates: List[str], strategy: str = 'average'
             ).tolist()
     else:
         raise ValueError('Invalid strategy')
-
     return embeddings
 '''
 def generate_embeddings_fasttext(templates: List[str], strategy: str = 'average') -> dict:
@@ -114,7 +113,7 @@ def generate_embeddings_fasttext(templates: List[str], strategy: str = 'average'
     clean_templates = [clean_template(template) for template in templates]
     templates = zip(clean_templates, templates)
     embeddings = {}
-    if strategy == 'average':
+    if strategy == 'average
         for template, k in templates:
             embeddings[k] = np.mean(log_key2vec(template), axis=0).tolist()
     elif strategy == 'tfidf':
