@@ -63,7 +63,42 @@ def log_key2vec(log_template: str, weight: List[float] = None):
         log_template_vec = np.zeros(300)
     return log_template_vec
 
+def generate_embeddings_fasttext(templates: List[str], strategy: str = 'average') -> dict:
+    clean_templates = [clean_template(t) for t in templates]
+    template_pairs = list(zip(clean_templates, templates))  # FIX 1
 
+    embeddings = {}
+
+    if strategy == 'average':
+        for clean_t, original_t in template_pairs:
+            embeddings[original_t] = np.mean(
+                log_key2vec(clean_t),
+                axis=0
+            ).tolist()
+
+    elif strategy == 'tfidf':
+        vectorizer = CountVectorizer()
+        transformer = TfidfTransformer()
+
+        X = vectorizer.fit_transform(clean_templates)
+        tfidf = transformer.fit_transform(X).toarray()
+        words = vectorizer.get_feature_names_out()
+
+        for i, (clean_t, original_t) in enumerate(template_pairs):
+            single_weights = []
+            for word in clean_t.split():
+                idx = np.where(words == word)[0]
+                single_weights.append(tfidf[i][idx[0]] if len(idx) > 0 else 0)
+
+            embeddings[original_t] = np.mean(
+                log_key2vec(clean_t, single_weights),
+                axis=0
+            ).tolist()
+    else:
+        raise ValueError('Invalid strategy')
+
+    return embeddings
+'''
 def generate_embeddings_fasttext(templates: List[str], strategy: str = 'average') -> dict:
     """
     Generate embeddings for templates using fasttext
@@ -110,7 +145,7 @@ def generate_embeddings_fasttext(templates: List[str], strategy: str = 'average'
 
     return embeddings
 
-
+'''
 def load_embeddings_fasttext(embedding_path: str) -> dict:
     """
     Load embeddings for templates using fasttext
@@ -131,12 +166,38 @@ if __name__ == '__main__':
     dataset = sys.argv[1]
     strategy = sys.argv[2]
 
+    with open(file_path_train, 'rb') as f:
+        train_df = pickle.load(f)
+
+    with open(file_path_test, 'rb') as f:
+        test_df = pickle.load(f)
+
+    templates_train = train_df['EventTemplate'].tolist()
+    templates_test = test_df['EventTemplate'].tolist()
+
+    # Combine and deduplicate
+    templates = list(
+        OrderedDict.fromkeys(
+            train_df["EventTemplate"].tolist() +
+            test_df["EventTemplate"].tolist()
+        )
+    )
+    embeddings = generate_embeddings_fasttext(templates, strategy=strategy)
+    with open(f'./{dataset}/{dataset}.log_embeddings_{strategy}.json', 'w') as f:
+        json.dump(embeddings, f)
+
+
+
+
+
+    '''
     print(f'Generating embeddings for {dataset} using {strategy}...')
     template_df = pd.read_csv(f'./{dataset}/{dataset}.log_templates.csv')
     templates = template_df['EventTemplate'].tolist()
     embeddings = generate_embeddings_fasttext(templates, strategy=strategy)
     with open(f'./{dataset}/{dataset}.log_embeddings_{strategy}.json', 'w') as f:
         json.dump(embeddings, f)
+    '''
 
 
 
