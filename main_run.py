@@ -295,10 +295,12 @@ def train_and_eval(args: argparse.Namespace,
                                                                  model_name=args.model_name,
                                                                  topk=1 if not is_unsupervised else args.topk)
 
-        train_time_min = (time.time() - start_train_time) / 60
-        logger.info(f"Training completed in {train_time_min:.2f} minutes")
 
         logger.info(f"Train Loss: {train_loss:.4f} - Val Loss: {val_loss:.4f} - Val Acc: {val_acc:.4f}")
+
+    train_time_min = (time.time() - start_train_time) / 60
+    logger.info(f"Training completed in {train_time_min:.2f} minutes")
+
     if args.model_name == "LogBERT":
         # print("len" ,len(valid_dataset_abnormal))
         # loss_normal , loss_abnormal = trainer.predict_logbert(valid_dataset_normal , valid_dataset_abnormal ,device = device)
@@ -384,11 +386,11 @@ def train_and_eval(args: argparse.Namespace,
         acc, f1, pre, rec = trainer.predict_supervised(test_dataset,
                                                        session_labels,
                                                        device=device)
-    test_time = (time.time() - start_test_time) / 60  # in minutes
+    test_time_min = (time.time() - start_test_time) / 60  # in minutes
     logger.info(f"Testing completed in {test_time:.2f} minutes")
 
     logger.info(f"Test Result:: Acc: {acc:.4f}, Precision: {pre:.4f}, Recall: {rec:.4f}, F1: {f1:.4f}")
-    return start_train_time, test_time_min, acc, f1, pre, rec
+    return train_time_min, test_time_min, acc, f1, pre, rec
 
 
 def run(args):
