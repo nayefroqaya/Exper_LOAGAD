@@ -68,7 +68,7 @@ def log_key2vec(log_template: str, weight: List[float] = None):
         log_template_vec = np.zeros(300)
     return log_template_vec
 
-def generate_embeddings_fasttext(templates: List[str], strategy: str = 'average') -> dict:
+def generate_embeddings_fasttext(templates: List[str], strategy: str = 'tfidf') -> dict:
     clean_templates = [clean_template(t) for t in templates]
     template_pairs = list(zip(clean_templates, templates))  # FIX 1
 
