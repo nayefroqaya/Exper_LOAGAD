@@ -167,6 +167,8 @@ def load_embeddings_fasttext(embedding_path: str) -> dict:
 
 
 if __name__ == '__main__':
+
+    '''
     dataset = sys.argv[1]
     strategy = sys.argv[2]
     file_path_train = 'BGL/2_BGL_Splitted_Datasets/train_df.pkl'
@@ -191,11 +193,7 @@ if __name__ == '__main__':
     embeddings = generate_embeddings_fasttext(templates, strategy=strategy)
     with open(f'./{dataset}/{dataset}.log_embeddings_{strategy}.json', 'w') as f:
         json.dump(embeddings, f)
-
-
-
-
-
+        
     '''
     print(f'Generating embeddings for {dataset} using {strategy}...')
     template_df = pd.read_csv(f'./{dataset}/{dataset}.log_templates.csv')
@@ -203,7 +201,7 @@ if __name__ == '__main__':
     embeddings = generate_embeddings_fasttext(templates, strategy=strategy)
     with open(f'./{dataset}/{dataset}.log_embeddings_{strategy}.json', 'w') as f:
         json.dump(embeddings, f)
-    '''
+
 
 
 
