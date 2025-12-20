@@ -30,8 +30,8 @@ def arg_parser():
                         help="window for building log sequence")
     parser.add_argument("--session_level", type=str, choices=["entry", "minute"],
                         help="to use log entries or log minutes for session level window")
-    parser.add_argument('--window_size', default=5, type=int, help='window size (entries or minutes)')
-    parser.add_argument('--step_size', default=1, type=int, help='step size (entries or minutes)')
+    parser.add_argument('--window_size', default=120, type=int, help='window size (entries or minutes)')
+    parser.add_argument('--step_size', default=120, type=int, help='step size (entries or minutes)')
     parser.add_argument('--train_size', default=0.4, type=float, help="train size")
     parser.add_argument("--valid_ratio", default=0.1, type=float, help="valid size")
 
@@ -63,7 +63,7 @@ def arg_parser():
                         help="to use semantic vector (word2vec)")
 
     # model parameters (deeplog, loganomaly, logrobust)
-    parser.add_argument("--history_size", default=10, type=int, help="window size for entry-level detection")
+    parser.add_argument("--history_size", default=120, type=int, help="window size for entry-level detection")
     parser.add_argument("--embeddings", default="embeddings.json", help="template embedding json file")
 
     parser.add_argument("--hidden_size", default=128, type=int, help="hidden size in lstm")
