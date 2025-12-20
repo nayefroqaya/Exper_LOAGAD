@@ -40,6 +40,36 @@ class Vocab(object):
 
     def get_event(self, real_event, use_similar=False):
         event = self.stoi.get(real_event, self.unk_index)
+
+        # If event is known or use_similar is False, return immediately
+        if not use_similar or event != self.unk_index:
+            return event
+
+        # If mapping already exists, return it
+        if self.mapping.get(real_event) is not None:
+            return self.mapping[real_event]
+
+        # Only attempt similarity if real_event exists in semantic_vectors
+        if real_event not in self.semantic_vectors:
+            # Special case: unknown semantic vector
+            self.mapping[real_event] = self.unk_index
+            return self.unk_index
+
+        for train_event in self.itos[:-1]:
+            if train_event not in self.semantic_vectors:
+                continue
+            sim = dot(self.semantic_vectors[real_event], self.semantic_vectors[train_event]) / (
+                        norm(self.semantic_vectors[real_event]) * norm(self.semantic_vectors[train_event]))
+            if sim > 0.90:
+                self.mapping[real_event] = self.stoi.get(train_event)
+                return self.stoi.get(train_event)
+
+        # If nothing matches, fallback to unknown
+        self.mapping[real_event] = self.unk_index
+        return self.unk_index
+
+        '''
+        event = self.stoi.get(real_event, self.unk_index)
         if not use_similar or event != self.unk_index:
             return event
         if self.mapping.get(real_event) is not None:
@@ -53,6 +83,7 @@ class Vocab(object):
                 return self.stoi.get(train_event)
         self.mapping[real_event] = self.unk_index
         return self.mapping[real_event]
+        '''
 
     def get_embedding(self, event):
         try:
