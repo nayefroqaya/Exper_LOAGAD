@@ -55,13 +55,14 @@ class Vocab(object):
         return self.mapping[real_event]
 
     def get_embedding(self, event):
-        #return self.semantic_vectors[event]
         try:
             # Original behavior
             return self.semantic_vectors[event]
         except KeyError:
-            # Fallback for unknown events
-            return self.semantic_vectors.get(event, np.zeros(self.embedding_dim))
+            # Determine embedding dimension dynamically
+            example_vector = next(iter(self.semantic_vectors.values()))
+            embedding_dim = len(example_vector)
+            return np.zeros(embedding_dim)
 
     def save_vocab(self, file_path):
         with open(file_path, 'wb') as f:
