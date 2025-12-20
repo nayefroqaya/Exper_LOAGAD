@@ -169,8 +169,8 @@ def load_embeddings_fasttext(embedding_path: str) -> dict:
 if __name__ == '__main__':
     dataset = sys.argv[1]
     strategy = sys.argv[2]
-    file_path_train = 'BGL/1_BGL_Splitted_Datasets/train_df.pkl'
-    file_path_test = 'BGL/1_BGL_Splitted_Datasets/test_df.pkl'
+    file_path_train = 'BGL/2_BGL_Splitted_Datasets/train_df.pkl'
+    file_path_test = 'BGL/2_BGL_Splitted_Datasets/test_df.pkl'
 
     with open(file_path_train, 'rb') as f:
         train_df = pickle.load(f)
