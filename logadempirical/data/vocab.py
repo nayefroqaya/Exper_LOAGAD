@@ -16,6 +16,20 @@ def read_json(filename):
 
 class Vocab(object):
     def __init__(self, logs, emb_file="embeddings.json", embedding_dim=100):
+        self.embedding_dim = embedding_dim
+        self.semantic_vectors = read_json(emb_file)
+
+        # Convert values to numpy arrays (important)
+        self.semantic_vectors = {
+            k: np.array(v, dtype=np.float32)
+            for k, v in self.semantic_vectors.items()
+        }
+
+        # ✅ Mean embedding for OOV events
+        self.mean_embedding = np.mean(
+            np.stack(list(self.semantic_vectors.values())),
+            axis=0
+        )
 
         self.stoi = {}
         self.itos = ['padding']
@@ -54,8 +68,10 @@ class Vocab(object):
         self.mapping[real_event] = self.unk_index
         return self.mapping[real_event]
 
+    #def get_embedding(self, event):
+    #    return self.semantic_vectors[event]
     def get_embedding(self, event):
-        return self.semantic_vectors[event]
+        return self.semantic_vectors.get(event, self.mean_embedding)
 
     def save_vocab(self, file_path):
         with open(file_path, 'wb') as f:
