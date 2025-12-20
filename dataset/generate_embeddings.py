@@ -195,6 +195,9 @@ if __name__ == '__main__':
         json.dump(embeddings, f)
         
     '''
+    dataset = sys.argv[1]
+    strategy = sys.argv[2]
+
     print(f'Generating embeddings for {dataset} using {strategy}...')
     template_df = pd.read_csv(f'./{dataset}/{dataset}.log_templates.csv')
     templates = template_df['EventTemplate'].tolist()
