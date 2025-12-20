@@ -118,6 +118,8 @@ class Vocab(object):
     #    return self.semantic_vectors[event]
     def get_embedding(self, event):
         #return self.semantic_vectors.get(event, self.mean_embedding)
+        #return self.semantic_vectors.get(event, self.mean_embedding)
+        print("Mean embedding exists?", hasattr(self, "mean_embedding"))
         return self.semantic_vectors.get(event, self.mean_embedding)
 
 
