@@ -1,4 +1,4 @@
-# dataset configuration
+## dataset configuration
 data_dir: ./dataset/BGL
 dataset_name: BGL
 log_file: BGL.log
@@ -39,7 +39,12 @@ max_epoch: 20
 output_dir: ./output/
 resume: false
 step_size: 120
+<<<<<<< HEAD
 #train_size: #0.6 #0.1
 #valid_ratio: #0.1
+#=======
+#train_size: 0.6 #0.1
+#valid_ratio: 0.1
+#>>>>>>> 767da89 (update dataset portion)
 window_size: 120
 train: true 
