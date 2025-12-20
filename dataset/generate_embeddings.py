@@ -14,6 +14,8 @@ import gensim
 from typing import List
 from time import time
 import json
+from collections import OrderedDict
+
 
 print("Loading word2vec model...")
 st = time()
