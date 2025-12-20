@@ -16,24 +16,38 @@ def read_json(filename):
 
 class Vocab(object):
     def __init__(self, logs, emb_file="embeddings.json", embedding_dim=100):
-
+        """
+        Vocab class for LOAGAD.
+        Handles:
+        - TF-IDF or Average embeddings
+        - OOV events using mean embedding
+        - stoi / itos mapping
+        """
         self.embedding_dim = embedding_dim
 
         # ---- Load embeddings ONCE ----
         raw_vectors = read_json(emb_file)
 
-        # Convert to numpy arrays
-        self.semantic_vectors = {k: np.array(v, dtype=np.float32) for k, v in raw_vectors.items() if
-            isinstance(v, list)}
+        # Convert all embeddings to numpy arrays
+        self.semantic_vectors = {
+            k: np.array(v, dtype=np.float32)
+            for k, v in raw_vectors.items()
+            if isinstance(v, list)
+        }
 
         # Padding token
         self.pad_token = "padding"
-        self.semantic_vectors[self.pad_token] = -1 * np.ones(embedding_dim, dtype=np.float32)
+        self.semantic_vectors[self.pad_token] = -1 * np.ones(
+            embedding_dim, dtype=np.float32
+        )
 
-        # ---- Mean embedding for OOV ----
-        self.mean_embedding = np.mean(np.stack(list(self.semantic_vectors.values())), axis=0)
+        # ---- Mean embedding for OOV events ----
+        self.mean_embedding = np.mean(
+            np.stack(list(self.semantic_vectors.values())),
+            axis=0
+        )
 
-        # ---- Build vocab ----
+        # ---- Build vocab from logs ----
         self.itos = ['padding']
         for line in logs:
             self.itos.extend(line)
