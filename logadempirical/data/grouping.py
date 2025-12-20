@@ -7,7 +7,7 @@ from tqdm import tqdm
 import numpy as np
 
 
-def session_window(raw_data, id_regex, label_dict, window_size=20):
+def session_window(raw_data, id_regex, label_dict, window_size=120):
     data_dict = {}  # defaultdict(list)
     raw_data = raw_data.to_dict("records")
 

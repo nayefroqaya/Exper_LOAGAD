@@ -311,19 +311,19 @@ def load_from_structured(logID2Temp, fixLength, ratio=[7, 1, 2], dataset="BGL", 
     n_train = int(len(data) * 9 / 10)
     if dataset == 'hdfs':
         train, _, idx = sliding_window(data[:n_train],
-                                       window_size=10,
+                                       window_size=120,
                                        id2temp=logID2Temp,
                                        idx=0
                                        )
     else:
         train, _, idx = sliding_window_test(data[:n_train],
-                                            window_size=10,
+                                            window_size=120,
                                             id2temp=logID2Temp,
                                             idx=0
                                             )
     train = train[:100000]
     val, _, idx = sliding_window_test(data[n_train:],
-                                      window_size=10,
+                                      window_size=120,
                                       id2temp=logID2Temp,
                                       idx=idx
                                       )
@@ -331,7 +331,7 @@ def load_from_structured(logID2Temp, fixLength, ratio=[7, 1, 2], dataset="BGL", 
     data = load_features("{}/test.pkl".format(output_dir), only_normal=False)
 
     test, _, _ = sliding_window_test(data,
-                                     window_size=10,
+                                     window_size=120,
                                      id2temp=logID2Temp,
                                      idx=idx
                                      )

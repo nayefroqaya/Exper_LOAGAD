@@ -2,7 +2,7 @@
 data_dir: ./dataset/BGL
 dataset_name: BGL
 log_file: BGL.log
-embeddings: embeddings_average.json
+embeddings: embeddings_tfidf.json
 
 # data preprocessing
 grouping: sliding #session
@@ -38,8 +38,8 @@ max_epoch: 20
 # common configuration
 output_dir: ./output/
 resume: false
-step_size: 20
-train_size: 0.6 #0.1
-valid_ratio: 0.1
-window_size: 20
+step_size: 120
+#train_size: #0.6 #0.1
+#valid_ratio: #0.1
+window_size: 120
 train: true 

@@ -2,7 +2,7 @@
 data_dir: ./dataset/BGL
 dataset_name: BGL
 log_file: BGL.log
-embeddings: embeddings_average.json
+embeddings: embeddings_tfidf.json
 
 # data preprocessing
 grouping: sliding #session
