@@ -470,19 +470,15 @@ def run(args):
 
 if __name__ == "__main__":
 
-    folder = "/storage/home/roqaya/Exper_LOAGAD/output"
+    output_dir = "/storage/home/roqaya/Exper_LOAGAD/output"
 
-    if os.path.exists(folder):
-        for item in os.listdir(folder):
-            path = os.path.join(folder, item)
-            try:
-                if os.path.isfile(path) or os.path.islink(path):
-                    os.unlink(path)  # delete file or symlink
-                elif os.path.isdir(path):
-                    shutil.rmtree(path)  # delete directory recursively
-            except Exception as e:
-                print(f"Failed to delete {path}: {e}")
-
+    if os.path.isdir(output_dir):
+        for item in os.listdir(output_dir):
+            path = os.path.join(output_dir, item)
+            if os.path.isfile(path) or os.path.islink(path):
+                os.unlink(path)
+            elif os.path.isdir(path):
+                shutil.rmtree(path)
     RESET = colorama.Fore.RESET
 
     # ---------------- Device setup (CPU ONLY) ----------------
