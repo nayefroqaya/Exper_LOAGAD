@@ -1,7 +1,7 @@
 ## dataset configuration
-data_dir: ./dataset/BGL
-dataset_name: BGL
-log_file: BGL.log
+data_dir: ./dataset/TH_2G
+dataset_name: TH_2G
+log_file: TH_2G.log
 embeddings: embeddings_tfidf.json
 
 # data preprocessing

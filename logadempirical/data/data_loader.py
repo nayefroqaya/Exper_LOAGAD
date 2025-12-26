@@ -46,7 +46,7 @@ def process_dataset_from_df(
         grouping: str,
         window_size: int,
         step_size: int,
-        dataset_name: str = "BGL",
+        dataset_name: str = "TH_2G",
         session_type: str = "entry",
         data_dir: str = None):
     """
@@ -73,7 +73,7 @@ def process_dataset_from_df(
 
     df_test = df_test[["Timestamp", "Label", "EventId", "EventTemplate", "Content", "processed_EventTemplate"]].copy()
 #    df_test["processed_EventTemplate"] = df_test["processed_EventTemplate"]
-
+    print(dataset_name)
     df_train.info()
     df_test.info()
     #exit()
@@ -87,10 +87,11 @@ def process_dataset_from_df(
         df_train["Label"] = df_train["Label"].apply(lambda x: int(x != "-"))
         df_test["Label"]  = df_test["Label"].apply(lambda x: int(x != "-"))
 
+        # we just need fix window for our dataset
         if session_type == "entry":
             sliding_fn = fixed_window
-        elif session_type == "time":
-            sliding_fn = time_sliding_window
+#        elif session_type == "time":
+#            sliding_fn = time_sliding_window
         else:
             raise ValueError("session_type must be 'entry' or 'time'")
 
@@ -123,10 +124,10 @@ def process_dataset_from_df(
 
             train_window = session_window(df_train, id_regex, label_dict, window_size)
             test_window  = session_window(df_test,  id_regex, label_dict, window_size)
-
-        elif dataset_name == "BGL":
-            train_window = session_window_bgl(df_train)
-            test_window  = session_window_bgl(df_test)
+     # I do not need to test dataset with session(only HDFS)
+     #   elif dataset_name == "BGL":
+     #       train_window = session_window_bgl(df_train)
+     #       test_window  = session_window_bgl(df_test)
         else:
             raise NotImplementedError(f"Dataset {dataset_name} not supported.")
     else:
@@ -287,6 +288,6 @@ if __name__ == '__main__':
     process_dataset_from_df(logger=logger, df_train=df_train, df_test=df_test, output_dir=output_dir,
         grouping="sliding",  # or "session for HDFS"
         window_size=120, step_size=120, session_type="entry",  # or "time"
-        dataset_name="BGL",  # or "BGL"
+        dataset_name="TH_2G",  # or "BGL"
         data_dir="output"  # needed only for session mode (HDFS)
     )
