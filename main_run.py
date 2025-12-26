@@ -408,8 +408,8 @@ def run(args):
         args.output_dir = f"{args.output_dir}/{args.dataset_name}/session/train{args.train_size}"
 
 
-    file_path_train = 'dataset/TH_2G/1_TH_2G_Splitted_Datasets/train_df.pkl'
-    file_path_test = 'dataset/TH_2G/1_TH_2G_Splitted_Datasets/test_df.pkl'
+    file_path_train = 'dataset/TH_2G/2_TH_2G_Splitted_Datasets/train_df.pkl'
+    file_path_test = 'dataset/TH_2G/2_TH_2G_Splitted_Datasets/test_df.pkl'
 
     # Read pickle file
     df_train = pd.read_pickle(file_path_train)
