@@ -406,8 +406,8 @@ def run(args):
         args.output_dir = f"{args.output_dir}/{args.dataset_name}/session/train{args.train_size}"
 
 
-    file_path_train = 'dataset/BGL/2_BGL_Splitted_Datasets/train_df.pkl'
-    file_path_test = 'dataset/BGL/2_BGL_Splitted_Datasets/test_df.pkl'
+    file_path_train = 'dataset/TH_2G/1_TH_2G_Splitted_Datasets/train_df.pkl'
+    file_path_test = 'dataset/TH_2G/1_TH_2G_Splitted_Datasets/test_df.pkl'
 
     # Read pickle file
     df_train = pd.read_pickle(file_path_train)
@@ -417,19 +417,23 @@ def run(args):
     print(' In run function ......')
     df_train.info()
     df_test.info()
+#    exit()
+
     df_train = df_train.drop(columns=['Label'])
     df_test = df_test.drop(columns=['Label'])
     df_train = df_train.rename(columns={'Original_Label': 'Label'})
     df_test = df_test.rename(columns={'Original_Label': 'Label'})
     df_train.info()
     df_test.info()
+    print(df_train['Label'].unique())
+    print(df_test['Label'].unique())
 #    exit()
 
     output_dir = "/storage/home/roqaya/Exper_LOAGAD/output" #output_dir = "../../dataset/BGL/" 
     train_path, test_path = process_dataset_from_df(logger=logger, df_train=df_train, df_test=df_test, output_dir=output_dir,
         grouping="sliding",  # or "session for HDFS"
         window_size=120, step_size=120, session_type="entry",  # or "time"
-        dataset_name="BGL",  # or "BGL"
+        dataset_name="TH_2G",  # or "BGL"
         data_dir="../../dataset/"  # needed only for session mode (HDFS)
     )
     #train_path, test_path = process_dataset(logger, data_dir=args.data_dir, output_dir=args.output_dir,
