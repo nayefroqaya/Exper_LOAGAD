@@ -141,10 +141,10 @@ def fixed_window(raw_data, window_size, step_size):
     log_size = raw_data.shape[0]
     print(raw_data.columns)
 #    exit()
-
-
-
     label_data, time_data = raw_data.iloc[:, 1], raw_data.iloc[:, 0]
+    print(label_data)
+    exit()
+
     logkey_data, log_template_data, content_data = raw_data.iloc[:, 2], raw_data.iloc[:, 3], raw_data.iloc[:, 4]
     new_data = []
     start_end_index_pair = set()
