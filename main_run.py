@@ -211,13 +211,17 @@ def train_and_eval(args: argparse.Namespace,
     Accuracy metrics
     """
     print("Loading train dataset\n")
-    data, stat = load_features(train_path,
-                               is_unsupervised=is_unsupervised,
-                               is_train=True)
-    logger.info(f"Train data statistics: {stat}")
-    data = shuffle(data)
-    n_valid = int(len(data) * args.valid_ratio)
-    train_data, valid_data = data[:-n_valid], data[-n_valid:]
+    #data, stat = load_features(train_path,
+    #                           is_unsupervised=is_unsupervised,
+    #                           is_train=True)
+    #logger.info(f"Train data statistics: {stat}")
+    #data = shuffle(data)
+    #n_valid = int(len(data) * args.valid_ratio)
+    #train_data, valid_data = data[:-n_valid], data[-n_valid:]
+    train_data, train_stat = load_features(train_path, is_unsupervised=is_unsupervised, is_train=True)
+    valid_data, valid_stat = load_features(valid_path, is_unsupervised=is_unsupervised, is_train=False)
+    logger.info(f"Train data statistics: {train_stat}")
+    logger.info(f"Valid data statistics: {valid_stat}")
 
     sequentials, quantitatives, semantics, labels, idxs, _ = sliding_window(
         train_data,
@@ -410,34 +414,49 @@ def run(args):
 
     file_path_train = 'dataset/HDFS/1_HDFS_Splitted_Datasets/train_df.pkl'
     file_path_test = 'dataset/HDFS/1_HDFS_Splitted_Datasets/test_df.pkl'
+    file_path_val = 'dataset/HDFS/1_HDFS_Splitted_Datasets/val_df.pkl'
 
     # Read pickle file
     df_train = pd.read_pickle(file_path_train)
     df_test = pd.read_pickle(file_path_test)
+    df_val = pd.read_pickle(file_path_val)
+
   #  df_train = df_train.rename(columns={'processed_EventTemplate': 'EventTemplate'})
   #  df_test = df_test.rename(columns={'processed_EventTemplate': 'EventTemplate'})
     print(' In run function ......')
     df_train.info()
     df_test.info()
+    df_val.info()
 #    exit()
 
     df_train = df_train.drop(columns=['Label'])
     df_test = df_test.drop(columns=['Label'])
+    df_val = df_val.drop(columns=['Label'])
+
     df_train = df_train.rename(columns={'Original_Label': 'Label'})
     df_test = df_test.rename(columns={'Original_Label': 'Label'})
+    df_val = df_val.rename(columns={'Original_Label': 'Label'})
+
     df_train.info()
     df_test.info()
+    df_val.info()
     print(df_train['Label'].unique())
     print(df_test['Label'].unique())
-#    exit()
+    print(df_val['Label'].unique())
 
-    output_dir = "/storage/home/roqaya/Exper_LOAGAD/output" #output_dir = "../../dataset/BGL/" 
-    train_path, test_path = process_dataset_from_df(logger=logger, df_train=df_train, df_test=df_test, output_dir=output_dir,
-        grouping="session",  # or "session for HDFS"
-        window_size=120, step_size=120, session_type="entry",  # or "time"
-        dataset_name="HDFS",  # or "BGL"
-        data_dir="../../dataset/"  # needed only for session mode (HDFS)
-    )
+    #output_dir = "/storage/home/roqaya/Exper_LOAGAD/output" #output_dir = "../../dataset/BGL/"
+    train_path, valid_path, test_path = process_dataset_from_df(logger=logger, df_train=df_train, df_valid=df_valid,
+        df_test=df_test, output_dir=args.output_dir, grouping=args.grouping, window_size=args.window_size,
+        step_size=args.step_size, session_type=args.session_level, dataset_name=args.dataset_name,
+        data_dir=args.data_dir)
+
+    #output_dir = "/storage/home/roqaya/Exper_LOAGAD/output" #output_dir = "../../dataset/BGL/"
+    #train_path, test_path = process_dataset_from_df(logger=logger, df_train=df_train, df_test=df_test, output_dir=output_dir,
+    #    grouping="session",  # or "session for HDFS"
+    #    window_size=120, step_size=120, session_type="entry",  # or "time"
+    #    dataset_name="HDFS",  # or "BGL"
+    #    data_dir="../../dataset/"  # needed only for session mode (HDFS)
+    #)
     #train_path, test_path = process_dataset(logger, data_dir=args.data_dir, output_dir=args.output_dir,
     #                                        log_file=args.log_file,
     #                                        dataset_name=args.dataset_name, grouping=args.grouping,

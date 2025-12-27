@@ -13,13 +13,17 @@ def arg_parser():
 
     # input parameters
     parser.add_argument("--model_name", help="which model to use", default="DeepLog",
-                        choices=["DeepLog", "LogAnomaly", "LogRobust", "NeuralLog", "CNN", "PLELog", "LogBERT"])
+                        choices=["DeepLog", "LogAnomaly", "LogRobust", "NeuralLog", "CNN"])
     parser.add_argument("--dataset_name", help="which dataset to use", default="HDFS",
-                        choices=["HDFS", "BGL", "Thunderbird", "Spirit", "Hadoop"])
+                        choices=["HDFS", "BGL", "TH_1G", "TH_2G", "SP_100MB","SP_150MB" ])
     parser.add_argument("--device", help="hardware device", default="cpu")
     parser.add_argument("--data_dir", default="./dataset/", metavar="DIR", help="data directory")
     parser.add_argument("--output_dir", default="./output", metavar="DIR", help="output directory")
     parser.add_argument("--log_file", default="HDFS.log", help="log file name")
+    # Add these under "input parameters"
+    parser.add_argument("--train_file", default="train_df.pkl", help="train dataset pickle file")
+    parser.add_argument("--valid_file", default="valid_df.pkl", help="validation dataset pickle file")
+    parser.add_argument("--test_file", default="test_df.pkl", help="test dataset pickle file")
 
     # experimental settings parameters
     parser.add_argument("--is_chronological", default=False, action='store_true', help="if use chronological split")
@@ -32,8 +36,8 @@ def arg_parser():
                         help="to use log entries or log minutes for session level window")
     parser.add_argument('--window_size', default=120, type=int, help='window size (entries or minutes)')
     parser.add_argument('--step_size', default=120, type=int, help='step size (entries or minutes)')
-    parser.add_argument('--train_size', default=0.4, type=float, help="train size")
-    parser.add_argument("--valid_ratio", default=0.1, type=float, help="valid size")
+    #parser.add_argument('--train_size', default=0.4, type=float, help="train size")
+    #parser.add_argument("--valid_ratio", default=0.1, type=float, help="valid size")
 
     # model parameters
     parser.add_argument("--resume", default=False, action='store_true')
