@@ -46,7 +46,7 @@ def process_dataset_from_df(
         grouping: str,
         window_size: int,
         step_size: int,
-        dataset_name: str = "TH_2G",
+        dataset_name: str = "HDFS",
         session_type: str = "entry",
         data_dir: str = None):
     """
@@ -118,7 +118,8 @@ def process_dataset_from_df(
     elif grouping == "session":
         if dataset_name == "HDFS":
             id_regex = r'(blk_-?\d+)'
-            blk_df = pd.read_csv(os.path.join(data_dir, "anomaly_label.csv"))
+#            blk_df = pd.read_csv(os.path.join('../../dataset/HDFS/', "anomaly_label.csv"))
+            blk_df = pd.read_csv("/app/home/roqaya/Exper_LOAGAD/dataset/HDFS/anomaly_label.csv")
             label_dict = {row["BlockId"]: (1 if row["Label"]=="Anomaly" else 0)
                           for _, row in blk_df.iterrows()}
 
@@ -286,8 +287,8 @@ if __name__ == '__main__':
     output_dir = "/storage/home/roqaya/Exper_LOAGAD/output"  #output_dir = "output"  # change to your preferred output folder
 #>>>>>>> 608a4fb (update dataset portion)
     process_dataset_from_df(logger=logger, df_train=df_train, df_test=df_test, output_dir=output_dir,
-        grouping="sliding",  # or "session for HDFS"
+        grouping="session",  # or "session for HDFS"
         window_size=120, step_size=120, session_type="entry",  # or "time"
-        dataset_name="TH_2G",  # or "BGL"
-        data_dir="output"  # needed only for session mode (HDFS)
+        dataset_name="HDFS",  # or "BGL"
+        data_dir="../../dataset/HDFS/"  # needed only for session mode (HDFS)
     )

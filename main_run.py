@@ -408,8 +408,8 @@ def run(args):
         args.output_dir = f"{args.output_dir}/{args.dataset_name}/session/train{args.train_size}"
 
 
-    file_path_train = 'dataset/TH_2G/2_TH_2G_Splitted_Datasets/train_df.pkl'
-    file_path_test = 'dataset/TH_2G/2_TH_2G_Splitted_Datasets/test_df.pkl'
+    file_path_train = 'dataset/HDFS/1_HDFS_Splitted_Datasets/train_df.pkl'
+    file_path_test = 'dataset/HDFS/1_HDFS_Splitted_Datasets/test_df.pkl'
 
     # Read pickle file
     df_train = pd.read_pickle(file_path_train)
@@ -433,9 +433,9 @@ def run(args):
 
     output_dir = "/storage/home/roqaya/Exper_LOAGAD/output" #output_dir = "../../dataset/BGL/" 
     train_path, test_path = process_dataset_from_df(logger=logger, df_train=df_train, df_test=df_test, output_dir=output_dir,
-        grouping="sliding",  # or "session for HDFS"
+        grouping="session",  # or "session for HDFS"
         window_size=120, step_size=120, session_type="entry",  # or "time"
-        dataset_name="TH_2G",  # or "BGL"
+        dataset_name="HDFS",  # or "BGL"
         data_dir="../../dataset/"  # needed only for session mode (HDFS)
     )
     #train_path, test_path = process_dataset(logger, data_dir=args.data_dir, output_dir=args.output_dir,
