@@ -451,7 +451,7 @@ def run(args):
     print(df_val['Label'].unique())
 
     #output_dir = "/storage/home/roqaya/Exper_LOAGAD/output" #output_dir = "../../dataset/BGL/"
-    train_path, valid_path, test_path = process_dataset_from_df(logger=logger, df_train=df_train, df_valid=df_valid,
+    train_path, valid_path, test_path = process_dataset_from_df(logger=logger, df_train=df_train, df_valid=df_val,
         df_test=df_test, output_dir=args.output_dir, grouping=args.grouping, window_size=args.window_size,
         step_size=args.step_size, session_type=args.session_level, dataset_name=args.dataset_name,
         data_dir=args.data_dir)
