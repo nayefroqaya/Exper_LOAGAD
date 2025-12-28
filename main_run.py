@@ -190,6 +190,7 @@ def build_model(args, vocab_size):
 def train_and_eval(args: argparse.Namespace,
                    train_path: str,
                    test_path: str,
+                   valid_path: str,
                    vocab: Vocab,
                    model: torch.nn.Module,
                    is_unsupervised=False,
@@ -486,6 +487,7 @@ def run(args):
     train_time, test_time, acc, f1, precision, recall= train_and_eval(args,
                    train_path,
                    test_path,
+                   valid_path,  # <-- add this
                    log_vocab,
                    model,
                    is_unsupervised=is_unsupervised,
