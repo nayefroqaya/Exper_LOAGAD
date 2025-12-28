@@ -406,11 +406,17 @@ def run(args):
     logger.setLevel(logging.INFO if accelerator.is_local_main_process else logging.ERROR)
     os.makedirs(args.output_dir, exist_ok=True)
 
+    #if args.grouping == "sliding":
+    #    args.output_dir = f"{args.output_dir}/{args.dataset_name}/sliding/W{args.window_size}_S{args.step_size}_C{args.is_chronological}_train{args.train_size}"
+    #else:
+    #    args.output_dir = f"{args.output_dir}/{args.dataset_name}/session/train{args.train_size}"
     if args.grouping == "sliding":
-        args.output_dir = f"{args.output_dir}/{args.dataset_name}/sliding/W{args.window_size}_S{args.step_size}_C{args.is_chronological}_train{args.train_size}"
+        output_subdir = f"{args.output_dir}/{args.dataset_name}/sliding/W{args.window_size}_S{args.step_size}_C{args.is_chronological}"
     else:
-        args.output_dir = f"{args.output_dir}/{args.dataset_name}/session/train{args.train_size}"
+        output_subdir = f"{args.output_dir}/{args.dataset_name}/session"
 
+    os.makedirs(output_subdir, exist_ok=True)
+    args.output_dir = output_subdir
 
     file_path_train = 'dataset/BGL/1_BGL_Splitted_Datasets/train_df.pkl'
     file_path_test = 'dataset/BGL/1_BGL_Splitted_Datasets/test_df.pkl'
