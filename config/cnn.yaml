@@ -5,7 +5,7 @@ log_file: BGL.log
 embeddings: embeddings_tfidf.json
 
 # data preprocessing
-grouping: session # sliding #session
+grouping: sliding  # sliding #session
 session_level: entry
 sequential: false
 semantic: true
