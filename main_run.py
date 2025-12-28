@@ -412,9 +412,9 @@ def run(args):
         args.output_dir = f"{args.output_dir}/{args.dataset_name}/session/train{args.train_size}"
 
 
-    file_path_train = 'dataset/HDFS/1_HDFS_Splitted_Datasets/train_df.pkl'
-    file_path_test = 'dataset/HDFS/1_HDFS_Splitted_Datasets/test_df.pkl'
-    file_path_val = 'dataset/HDFS/1_HDFS_Splitted_Datasets/val_df.pkl'
+    file_path_train = 'dataset/BGL/1_BGL_Splitted_Datasets/train_df.pkl'
+    file_path_test = 'dataset/BGL/1_BGL_Splitted_Datasets/test_df.pkl'
+    file_path_val = 'dataset/BGL/1_BGL_Splitted_Datasets/val_df.pkl'
 
     # Read pickle file
     df_train = pd.read_pickle(file_path_train)
