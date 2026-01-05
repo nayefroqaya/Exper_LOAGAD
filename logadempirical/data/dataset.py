@@ -97,7 +97,8 @@ class BaseDataset(Dataset):
 
 
 class LogDataset(BaseDataset):
-    def __init__(self, sequentials=None, quantitatives=None, semantics=None, is_unsupervised=False, labels=None,
+    def \
+            __init__(self, sequentials=None, quantitatives=None, semantics=None, is_unsupervised=False, labels=None,
                  idxs=None, remove_duplicates=False):
         super(LogDataset, self).__init__(sequentials=sequentials, quantitatives=quantitatives, semantics=semantics,
                                          is_unsupervised=is_unsupervised, labels=labels, idxs=idxs,

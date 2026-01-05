@@ -10,7 +10,7 @@ import shutil
 
 #<<<<<<< HEAD
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = ""   # ⛔ Disable GPU completely
+#os.environ["CUDA_VISIBLE_DEVICES"] = ""   # ⛔ Disable GPU completely
 #=======
 import pandas as pd
 #>>>>>>> 6198c6c (update dataset portion)
@@ -511,10 +511,17 @@ if __name__ == "__main__":
     RESET = colorama.Fore.RESET
 
     # ---------------- Device setup (CPU ONLY) ----------------
-    device = torch.device("cpu")
-    torch.backends.cudnn.enabled = False
-    torch.backends.cuda.enabled = False
-    print(f"Using device: CPU only{RESET}")
+    #device = torch.device("cpu")
+    #torch.backends.cudnn.enabled = False
+    #torch.backends.cuda.enabled = False
+    #print(f"Using device: CPU only{RESET}")
+
+    # Automatically select GPU if available, otherwise CPU
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # Enable cuDNN for GPU acceleration
+    torch.backends.cudnn.enabled = True
+    # Print the device being used
+    print(f"Using device: {device}")
 
     parser = arg_parser()
     args = parser.parse_args()
