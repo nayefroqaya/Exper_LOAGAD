@@ -19,7 +19,7 @@ def arg_parser():
     parser.add_argument("--device", help="hardware device", default="GPU")
     parser.add_argument("--data_dir", default="./dataset/", metavar="DIR", help="data directory")
     parser.add_argument("--output_dir", default="./output", metavar="DIR", help="output directory")
-    parser.add_argument("--log_file", default="HDFS.log", help="log file name")
+    parser.add_argument("--log_file", default="BGL.log", help="log file name")
     # Add these under "input parameters"
     parser.add_argument("--train_file", default="train_df.pkl", help="train dataset pickle file")
     parser.add_argument("--valid_file", default="valid_df.pkl", help="validation dataset pickle file")

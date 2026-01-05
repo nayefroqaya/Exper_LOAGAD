@@ -419,9 +419,9 @@ def run(args):
     os.makedirs(output_subdir, exist_ok=True)
     args.output_dir = output_subdir
 
-    file_path_train = 'dataset/HDFS/1_HDFS_Splitted_Datasets/train_df.pkl'
-    file_path_test = 'dataset/HDFS/1_HDFS_Splitted_Datasets/test_df.pkl'
-    file_path_val = 'dataset/HDFS/1_HDFS_Splitted_Datasets/val_df.pkl'
+    file_path_train = 'dataset/BGL/1_BGL_Splitted_Datasets/train_df.pkl'
+    file_path_test = 'dataset/BGL/1_BGL_Splitted_Datasets/test_df.pkl'
+    file_path_val = 'dataset/BGL/1_BGL_Splitted_Datasets/val_df.pkl'
 
     # Read pickle file
     df_train = pd.read_pickle(file_path_train)
@@ -521,7 +521,7 @@ if __name__ == "__main__":
     # Enable cuDNN for GPU acceleration
     torch.backends.cudnn.enabled = True
     # Print the device being used
-    print(f"Using device-----------------------------------------: {device}")
+    print(f"Using device-------------------xxxxxxxxxxxxxx****-------------------: {device}")
 
     parser = arg_parser()
     args = parser.parse_args()
