@@ -521,7 +521,7 @@ if __name__ == "__main__":
     # Enable cuDNN for GPU acceleration
     torch.backends.cudnn.enabled = True
     # Print the device being used
-    print(f"Using device: {device}")
+    print(f"Using device-----------------------------------------: {device}")
 
     parser = arg_parser()
     args = parser.parse_args()
