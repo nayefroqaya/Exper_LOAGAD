@@ -16,7 +16,7 @@ def arg_parser():
                         choices=["DeepLog", "LogAnomaly", "LogRobust", "NeuralLog", "CNN"])
     parser.add_argument("--dataset_name", help="which dataset to use", default="BGL",
                         choices=["HDFS", "BGL", "TH_1G", "TH_2G", "SP_100MB","SP_150MB" ])
-    parser.add_argument("--device", help="hardware device", default="cpu")
+    parser.add_argument("--device", help="hardware device", default="GPU")
     parser.add_argument("--data_dir", default="./dataset/", metavar="DIR", help="data directory")
     parser.add_argument("--output_dir", default="./output", metavar="DIR", help="output directory")
     parser.add_argument("--log_file", default="HDFS.log", help="log file name")
