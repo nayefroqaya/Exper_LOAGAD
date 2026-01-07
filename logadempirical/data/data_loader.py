@@ -47,7 +47,7 @@ def process_dataset_from_df(
     grouping: str,
     window_size: int,
     step_size: int,
-    dataset_name: str = "HDFS",
+    dataset_name: str = "TH_1G",
     session_type: str = "entry",
     data_dir: str = None
 ):
@@ -139,13 +139,11 @@ if __name__ == '__main__':
 
     process_dataset_from_df(logger=logger, df_train=df_train, df_valid=df_valid,
         # make sure you have a validation dataframe
-        df_test=df_test, output_dir=output_dir, grouping="session",  # "session" for HDFS/BGL datasets
+        df_test=df_test, output_dir=output_dir, grouping="sliding",  # "session" for HDFS/BGL datasets
         window_size=120, step_size=120, session_type="entry",  # or "time"
-        dataset_name="HDFS",  # "HDFS" or "BGL"
-        data_dir="../../dataset/HDFS/"  # needed only for session mode
+        dataset_name="TH_1G",  # "HDFS" or "BGL"
+        data_dir="../../dataset/TH_1G/"  # needed only for session mode
     )
-
-
     #process_dataset_from_df(logger=logger, df_train=df_train, df_test=df_test, output_dir=output_dir,
     #    grouping="session",  # or "session for HDFS"
     #    window_size=120, step_size=120, session_type="entry",  # or "time"
