@@ -124,7 +124,10 @@ class Trainer:
             return loss, acc, 1
 
     def train(self, device: str = 'cpu', save_dir: str = None, model_name: str = None, topk: int = 1):
+        print(f"Using device: {device}")
+        print(f"Device type: {device.type}")
 
+        exit()
         def collate_fn(batch_list):
            """
            Converts a list of dicts into a dict of tensors.
