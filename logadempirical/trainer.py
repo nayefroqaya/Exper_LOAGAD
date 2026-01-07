@@ -127,7 +127,7 @@ class Trainer:
         print(f"Using device: {device}")
         print(f"Device type: {device.type}")
 
-        exit()
+        #exit()
         def collate_fn(batch_list):
            """
            Converts a list of dicts into a dict of tensors.
