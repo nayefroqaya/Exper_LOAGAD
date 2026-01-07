@@ -57,7 +57,7 @@ class Trainer:
         # return 0
         for idx, batch in enumerate(train_loader):
             # batch = {k: v.to(device) for k, v in batch.items()}
-            print(batch)
+            print(batch_size)
             exit()
             outputs = self.model(batch, device=device)
             loss = outputs.loss
