@@ -127,6 +127,7 @@ class Trainer:
         print(f"Using device: {device}")
         print(f"Device type: {device.type}")
 
+
         #exit()
         def collate_fn(batch_list):
            """

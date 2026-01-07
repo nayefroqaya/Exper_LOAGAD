@@ -381,7 +381,6 @@ def train_and_eval(args: argparse.Namespace,
     start_test_time = time.time()
     if is_unsupervised:
         logger.info(f"Start predicting {args.model_name} model on {device} device with top-{args.topk} recommendation")
-
         acc, f1, pre, rec = trainer.predict_unsupervised(test_dataset,
                                                          session_labels,
                                                          topk=args.topk,
@@ -419,9 +418,9 @@ def run(args):
     os.makedirs(output_subdir, exist_ok=True)
     args.output_dir = output_subdir
 
-    file_path_train = 'dataset/HDFS/1_HDFS_Splitted_Datasets/train_df.pkl'
-    file_path_test = 'dataset/HDFS/1_HDFS_Splitted_Datasets/test_df.pkl'
-    file_path_val = 'dataset/HDFS/1_HDFS_Splitted_Datasets/val_df.pkl'
+    file_path_train = 'dataset/TH_1G/1_TH_1G_Splitted_Datasets/train_df.pkl'
+    file_path_test = 'dataset/TH_1G/1_TH_1G_Splitted_Datasets/test_df.pkl'
+    file_path_val = 'dataset/TH_1G/1_TH_1G_Splitted_Datasets/val_df.pkl'
 
     # Read pickle file
     df_train = pd.read_pickle(file_path_train)
