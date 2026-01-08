@@ -1,6 +1,5 @@
-## dataset configuration
-data_dir: ./dataset/TH_1G
-dataset_name:  TH_1G
+data_dir: ./dataset/TH_2G
+dataset_name:  TH_2G
 #log_file: .log
 embeddings: embeddings_tfidf.json
 
