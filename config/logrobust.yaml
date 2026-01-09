@@ -1,6 +1,6 @@
 # dataset configuration
-data_dir: ./dataset/SP_100MB
-dataset_name:  SP_100MB
+data_dir: ./dataset/SP_150MB
+dataset_name:  SP_150MB
 #log_file: .log
 embeddings: embeddings_tfidf.json
 

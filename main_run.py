@@ -418,9 +418,9 @@ def run(args):
     os.makedirs(output_subdir, exist_ok=True)
     args.output_dir = output_subdir
 
-    file_path_train = 'dataset/SP_100MB/1_SP_100MB_Splitted_Datasets/train_df.pkl'
-    file_path_test = 'dataset/SP_100MB/1_SP_100MB_Splitted_Datasets/test_df.pkl'
-    file_path_val = 'dataset/SP_100MB/1_SP_100MB_Splitted_Datasets/val_df.pkl'
+    file_path_train = 'dataset/SP_150MB/1_SP_150MB_Splitted_Datasets/train_df.pkl'
+    file_path_test = 'dataset/SP_150MB/1_SP_150MB_Splitted_Datasets/test_df.pkl'
+    file_path_val = 'dataset/SP_150MB/1_SP_150MB_Splitted_Datasets/val_df.pkl'
 
     # Read pickle file
     df_train = pd.read_pickle(file_path_train)
