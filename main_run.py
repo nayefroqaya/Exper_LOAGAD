@@ -10,7 +10,7 @@ import shutil
 
 #<<<<<<< HEAD
 import os
-#os.environ["CUDA_VISIBLE_DEVICES"] = ""   # ⛔ Disable GPU completely
+os.environ["CUDA_VISIBLE_DEVICES"] = ""   # ⛔ Disable GPU completely
 #=======
 import pandas as pd
 #>>>>>>> 6198c6c (update dataset portion)

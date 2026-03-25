@@ -18,7 +18,7 @@ def arg_parser():
                         choices=["HDFS", "BGL", "TH_1G", "TH_2G", "SP_100MB","SP_150MB" ])
     parser.add_argument("--log_file", default="TH_1G.log", help="log file name")
 
-    parser.add_argument("--device", help="hardware device", default="GPU")
+    parser.add_argument("--device", help="hardware device", default="CPU")
     parser.add_argument("--data_dir", default="./dataset/", metavar="DIR", help="data directory")
     parser.add_argument("--output_dir", default="./output", metavar="DIR", help="output directory")
     # Add these under "input parameters"
