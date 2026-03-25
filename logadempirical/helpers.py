@@ -9,10 +9,10 @@ def arg_parser():
     """
     parser = ArgumentParser()
 
-    parser.add_argument("--config_file", default="config/deeplog1.yaml", help="config file name")
+    parser.add_argument("--config_file", default="config/cnn.yaml", help="config file name")
 
     # input parameters
-    parser.add_argument("--model_name", help="which model to use", default="DeepLog",
+    parser.add_argument("--model_name", help="which model to use", default="CNN",
                         choices=["DeepLog", "LogAnomaly", "LogRobust", "NeuralLog", "CNN"])
     parser.add_argument("--dataset_name", help="which dataset to use", default="SP_150MB",
                         choices=["HDFS", "BGL", "TH_1G", "TH_2G", "SP_100MB","SP_150MB" ])
