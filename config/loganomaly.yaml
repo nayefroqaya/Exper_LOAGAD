@@ -1,5 +1,5 @@
-data_dir: ./dataset/BGL
-dataset_name:  BGL
+data_dir: ./dataset/TH_1G
+dataset_name:  TH_1G
 #log_file: .log
 embeddings: embeddings_tfidf.json
 
