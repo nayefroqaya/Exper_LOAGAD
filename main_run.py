@@ -418,9 +418,9 @@ def run(args):
     os.makedirs(output_subdir, exist_ok=True)
     args.output_dir = output_subdir
 
-    file_path_train = 'dataset/BGL/2_BGL_Splitted_Datasets/train_df.pkl'
-    file_path_test = 'dataset/BGL/2_BGL_Splitted_Datasets/test_df.pkl'
-    file_path_val = 'dataset/BGL/2_BGL_Splitted_Datasets/val_df.pkl'
+    file_path_train = 'dataset/BGL/3_BGL_Splitted_Datasets/train_df.pkl'
+    file_path_test = 'dataset/BGL/3_BGL_Splitted_Datasets/test_df.pkl'
+    file_path_val = 'dataset/BGL/3_BGL_Splitted_Datasets/val_df.pkl'
 
     # Read pickle file
     df_train = pd.read_pickle(file_path_train)
