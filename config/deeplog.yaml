@@ -1,6 +1,6 @@
 # dataset configuration
-data_dir: ./dataset/SP_150MB
-dataset_name:  SP_150MB
+data_dir: ./dataset/BGL
+dataset_name:  BGL
 #log_file: .log
 embeddings: embeddings_tfidf.json
 
