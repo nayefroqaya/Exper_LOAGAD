@@ -1,11 +1,11 @@
 # dataset configuration
-data_dir: ./dataset/HDFS
-dataset_name:  HDFS
+data_dir: ./dataset/BGL
+dataset_name:  BGL
 #log_file: .log
 embeddings: embeddings_tfidf.json
 
 # data preprocessing
-grouping: session # sliding  # sliding #session
+grouping: sliding # sliding  # sliding #session
 session_level: entry
 sequential: false
 semantic: true
