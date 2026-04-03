@@ -1,6 +1,6 @@
 # dataset configuration
-data_dir: ./dataset/HDFS
-dataset_name:  HDFS
+data_dir: ./dataset/BGL
+dataset_name:  BGL
 #log_file: .log
 embeddings: embeddings_tfidf.json
 
