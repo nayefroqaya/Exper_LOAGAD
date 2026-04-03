@@ -423,9 +423,11 @@ def run(args):
     #file_path_test = 'dataset/BGL/1_BGL_Splitted_Datasets/test_df.pkl'
     #file_path_val = 'dataset/BGL/1_BGL_Splitted_Datasets/val_df.pkl'
 
-    file_path_train = '../NovaAD_Plus/datasets/HDFS/3_HDFS_Splitted_Datasets/train_df.pkl'
-    file_path_test = '../NovaAD_Plus/datasets/HDFS/3_HDFS_Splitted_Datasets/test_df.pkl'
-    file_path_val = '../NovaAD_Plus/datasets/HDFS/3_HDFS_Splitted_Datasets/val_df.pkl'
+    file_path_train = '../NovaAD_Plus/datasets/HDFS/1_HDFS_Splitted_Datasets/train_df.pkl'
+    file_path_test = '../NovaAD_Plus/datasets/HDFS/1_HDFS_Splitted_Datasets/test_df.pkl'
+    file_path_val = '../NovaAD_Plus/datasets/HDFS/1_HDFS_Splitted_Datasets/val_df.pkl'
+
+
 
     # Read pickle file
     df_train = pd.read_pickle(file_path_train)
@@ -435,9 +437,9 @@ def run(args):
   #  df_train = df_train.rename(columns={'processed_EventTemplate': 'EventTemplate'})
   #  df_test = df_test.rename(columns={'processed_EventTemplate': 'EventTemplate'})
     print(' In run function ......')
-    df_train.info()
-    df_test.info()
-    df_val.info()
+    #df_train.info()
+    #df_test.info()
+    #df_val.info()
 
     print(df_train["Original_Label"].unique())
     print(df_train["Label"].unique())
