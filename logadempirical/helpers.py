@@ -14,9 +14,9 @@ def arg_parser():
     # input parameters
     parser.add_argument("--model_name", help="which model to use", default="CNN",
                         choices=["DeepLog", "LogAnomaly", "LogRobust", "NeuralLog", "CNN"])
-    parser.add_argument("--dataset_name", help="which dataset to use", default="SP_100MB",
+    parser.add_argument("--dataset_name", help="which dataset to use", default="SP_150MB",
                         choices=["HDFS", "BGL", "TH_1G", "TH_2G", "SP_100MB","SP_150MB" ])
-    parser.add_argument("--log_file", default="SP_100MB.log", help="log file name")
+    parser.add_argument("--log_file", default="SP_150MB.log", help="log file name")
 
     parser.add_argument("--device", help="hardware device", default="CPU")
     parser.add_argument("--data_dir", default="./dataset/", metavar="DIR", help="data directory")
