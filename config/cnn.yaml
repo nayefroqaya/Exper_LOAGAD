@@ -1,11 +1,11 @@
 # dataset configuration
-data_dir: ./dataset/CNN
-dataset_name:  CNN
+data_dir: ./dataset/HDFS
+dataset_name:  HDFS
 #log_file: .log
 embeddings: embeddings_tfidf.json
 
 # data preprocessing
-grouping: sliding # sliding  # sliding #session
+grouping: sliding # session  # sliding #session
 session_level: entry
 sequential: false
 semantic: true
