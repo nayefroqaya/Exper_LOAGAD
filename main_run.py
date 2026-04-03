@@ -438,6 +438,15 @@ def run(args):
     df_train.info()
     df_test.info()
     df_val.info()
+
+    print(df_train["Original_Label"].unique())
+    print(df_train["Label"].unique())
+
+    print(df_test["Original_Label"].unique())
+    print(df_test["Label"].unique())
+
+    print(df_val["Original_Label"].unique())
+    print(df_val["Label"].unique())
     exit()
 
     df_train = df_train.drop(columns=['Label'])
