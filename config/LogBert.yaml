@@ -7,7 +7,7 @@ log_file: BGL.log
 embeddings: embeddings_average.json
 
 # Data preprocessing
-grouping: session
+grouping: sliding  # session
 session_level: entry
 sequential: true          # LogBERT requires sequential modeling
 semantic: true
