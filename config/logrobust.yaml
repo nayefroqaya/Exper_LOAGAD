@@ -5,7 +5,7 @@ dataset_name:  SP_100MB
 embeddings: embeddings_tfidf.json
 
 # data preprocessing
-grouping: session # sliding  # sliding #session
+grouping: sliding # sliding  # sliding #session
 session_level: entry
 sequential: true
 semantic: true
