@@ -1,6 +1,6 @@
 # dataset configuration
-data_dir: ./dataset/HDFS
-dataset_name:  HDFS
+data_dir: ./dataset/SP_100MB
+dataset_name:  SP_100MB
 #log_file: .log
 embeddings: embeddings_tfidf.json
 
