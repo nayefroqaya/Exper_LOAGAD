@@ -7,7 +7,7 @@ dataset_name: SP_100MB
 embeddings: embeddings_tfidf.json #embeddings_average.json
 
 # Data preprocessing
-grouping: sliding  # session
+grouping: session  # session
 session_level: entry
 sequential: true          # LogBERT requires sequential modeling
 semantic: true
