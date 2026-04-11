@@ -1,13 +1,13 @@
 # ===============================
 # Dataset configuration
 # ===============================
-data_dir: ./dataset/SP_100MB
-dataset_name: SP_100MB
+data_dir: ./dataset/BGL
+dataset_name: BGL
 #log_file: BGL.log
 embeddings: embeddings_tfidf.json #embeddings_average.json
 
 # Data preprocessing
-grouping: session  # session
+grouping: sliding  # session
 session_level: entry
 sequential: true          # LogBERT requires sequential modeling
 semantic: true
