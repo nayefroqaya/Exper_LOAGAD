@@ -1,5 +1,5 @@
-#data_dir: ./dataset/SP_150MB_ratio
-data_dir: #./datasets/SP_150MB_ratio
+#data_dir: ./dataset/SP_150MB_ratio  # first paper
+data_dir:  ../NovaAD_Plus/datasets/SP_150MB_ratio   # second paper
 
 dataset_name:  SP_150MB_ratio
 #log_file: .log
