@@ -1,10 +1,10 @@
 # dataset configuration
 #data_dir: ./dataset/SP_150MB_ratio
-data_dir:  ../../NovaAD_Plus/datasets/SP_150MB_ratio
+data_dir:  ../NovaAD_Plus/datasets/SP_150MB_ratio
 
 dataset_name:  SP_150MB_ratio
 #log_file: .log
-embeddings: ../../NovaAD_Plus/datasets/SP_150MB_ratio/embeddings_tfidf.json
+embeddings: embeddings_tfidf.json
 
 # data preprocessing
 grouping: sliding # sliding  # sliding #session
