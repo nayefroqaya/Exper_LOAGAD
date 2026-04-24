@@ -1,6 +1,6 @@
 # dataset configuration
 #data_dir: ./dataset/SP_150MB_ratio
-data_dir: ./datasets/SP_150MB_ratio
+data_dir: #./datasets/SP_150MB_ratio
 
 dataset_name:  SP_150MB_ratio
 #log_file: .log
