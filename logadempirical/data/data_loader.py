@@ -141,8 +141,10 @@ if __name__ == '__main__':
         # make sure you have a validation dataframe
         df_test=df_test, output_dir=output_dir, grouping="sliding",  # "session" for HDFS/BGL datasets
         window_size=120, step_size=120, session_type="entry",  # or "time"
-        dataset_name="SP_150MB",  # "HDFS" or "BGL"
-        data_dir="../../dataset/SP_150MB/"  # needed only for session mode
+
+        dataset_name="xxx",    #"SP_150MB",  # "HDFS" or "BGL"
+
+        data_dir= "xxxxx"   #"../../dataset/SP_150MB/"  # needed only for session mode
     )
     #process_dataset_from_df(logger=logger, df_train=df_train, df_test=df_test, output_dir=output_dir,
     #    grouping="session",  # or "session for HDFS"

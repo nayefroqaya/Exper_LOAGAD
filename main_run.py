@@ -423,9 +423,9 @@ def run(args):
     #file_path_test = 'dataset/BGL/1_BGL_Splitted_Datasets/test_df.pkl'
     #file_path_val = 'dataset/BGL/1_BGL_Splitted_Datasets/val_df.pkl'
 
-    file_path_train = '../NovaAD_Plus/datasets/BGL/2_BGL_Splitted_Datasets/train_df.pkl'
-    file_path_test = '../NovaAD_Plus/datasets/BGL/2_BGL_Splitted_Datasets/test_df.pkl'
-    file_path_val = '../NovaAD_Plus/datasets/BGL/2_BGL_Splitted_Datasets/val_df.pkl'
+    file_path_train = '../NovaAD_Plus/datasets/SP_150MB_ratio/1_SP_150MB_ratio_Splitted_Datasets/1_SP_150MB_ratio_train_df.pkl'
+    file_path_test = '../NovaAD_Plus/datasets/SP_150MB_ratio/1_SP_150MB_ratio_Splitted_Datasets/1_SP_150MB_ratio_test_df.pkl'
+    file_path_val = '../NovaAD_Plus/datasets/SP_150MB_ratio/1_SP_150MB_ratio_Splitted_Datasets/1_SP_150MB_ratio_val_df.pkl'
 
     # Read pickle file
     df_train = pd.read_pickle(file_path_train)
