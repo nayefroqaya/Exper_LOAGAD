@@ -11,7 +11,7 @@ grouping: sliding  # session
 session_level: entry
 sequential: true          # LogBERT requires sequential modeling
 semantic: true
-quantitative: true        # You used --quantitative
+quantitative: false        # You used --quantitative
 window_size: 20
 step_size: 1
 history_size: 30
