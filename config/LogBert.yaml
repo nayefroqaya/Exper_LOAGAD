@@ -41,7 +41,7 @@ accumulation_step: 1
 # ===============================
 # Training configuration
 # ===============================
-batch_size: 2048
+batch_size: 512 #2048
 max_epoch: 10
 train_size: 0.6
 valid_ratio: 0.1
