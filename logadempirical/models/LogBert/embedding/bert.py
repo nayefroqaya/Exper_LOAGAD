@@ -45,19 +45,54 @@ class BERTEmbedding(nn.Module):
     def forward(self, sequence, segment_label=None, time_info=None):
         sequence = sequence.long()
 
-        # Token embedding: event IDs
+        # -------------------------------
+        # 1. Check token IDs before CUDA embedding lookup
+        # -------------------------------
+        seq_cpu = sequence.detach().cpu()
+
+        # Get vocab size from token embedding
+        if hasattr(self.token, "embedding"):
+            vocab_size = self.token.embedding.num_embeddings
+        elif hasattr(self.token, "weight"):
+            vocab_size = self.token.weight.size(0)
+        elif hasattr(self.token, "token"):
+            vocab_size = self.token.token.weight.size(0)
+        else:
+            raise AttributeError("Cannot find token embedding weight in self.token")
+
+        seq_min = int(seq_cpu.min().item())
+        seq_max = int(seq_cpu.max().item())
+
+        if seq_min < 0 or seq_max >= vocab_size:
+            print("BAD TOKEN INDEX FOUND")
+            print("sequence shape:", tuple(sequence.shape))
+            print("sequence min:", seq_min)
+            print("sequence max:", seq_max)
+            print("token vocab size:", vocab_size)
+            print("bad values:", seq_cpu[(seq_cpu < 0) | (seq_cpu >= vocab_size)][:50])
+            raise ValueError("Token index out of range for token embedding.")
+
+        # -------------------------------
+        # 2. Token embedding: event IDs
+        # -------------------------------
         token_x = self.token(sequence)
 
-        # Position embedding: positions 0, 1, 2, ..., seq_len - 1
+        # -------------------------------
+        # 3. Position embedding: positions, NOT event IDs
+        # -------------------------------
         batch_size, seq_len = sequence.size()
 
-        position_ids = torch.arange(seq_len, dtype=torch.long, device=sequence.device)
-
-        position_ids = position_ids.unsqueeze(0).expand(batch_size, seq_len)
+        position_ids = torch.arange(
+            seq_len,
+            dtype=torch.long,
+            device=sequence.device
+        ).unsqueeze(0).expand(batch_size, seq_len)
 
         x = self.position(position_ids)
 
-        # Add position + token embeddings
+        # -------------------------------
+        # 4. Add embeddings
+        # -------------------------------
         x = x + token_x
 
         if segment_label is not None:
