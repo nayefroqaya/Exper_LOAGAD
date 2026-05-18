@@ -4,6 +4,7 @@ from .token import TokenEmbedding
 from .position import PositionalEmbedding
 from .segment import SegmentEmbedding
 from .time_embed import TimeEmbedding
+import torch
 
 class BERTEmbedding(nn.Module):
     """
@@ -31,12 +32,39 @@ class BERTEmbedding(nn.Module):
         self.is_logkey = is_logkey
         self.is_time = is_time
 
+    #def forward(self, sequence, segment_label=None, time_info=None):
+    #    x = self.position(sequence)
+    #    # if self.is_logkey:
+    #    x = x + self.token(sequence)
+    #    if segment_label is not None:
+    #        x = x + self.segment(segment_label)
+    #    if self.is_time:
+    #        x = x + self.time_embed(time_info)
+    #    return self.dropout(x)
+
     def forward(self, sequence, segment_label=None, time_info=None):
-        x = self.position(sequence)
-        # if self.is_logkey:
-        x = x + self.token(sequence)
+        sequence = sequence.long()
+
+        # Token embedding: event IDs
+        token_x = self.token(sequence)
+
+        # Position embedding: positions 0, 1, 2, ..., seq_len - 1
+        batch_size, seq_len = sequence.size()
+
+        position_ids = torch.arange(seq_len, dtype=torch.long, device=sequence.device)
+
+        position_ids = position_ids.unsqueeze(0).expand(batch_size, seq_len)
+
+        x = self.position(position_ids)
+
+        # Add position + token embeddings
+        x = x + token_x
+
         if segment_label is not None:
+            segment_label = segment_label.long()
             x = x + self.segment(segment_label)
+
         if self.is_time:
             x = x + self.time_embed(time_info)
+
         return self.dropout(x)
