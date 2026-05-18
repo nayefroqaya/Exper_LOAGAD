@@ -14,7 +14,7 @@ semantic: true
 quantitative: false        # You used --quantitative
 window_size: 120
 step_size: 1
-history_size: 30
+history_size: 120
 
 # ===============================
 # Model configuration
