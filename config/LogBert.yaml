@@ -11,10 +11,10 @@ grouping: sliding  # session
 session_level: entry
 sequential: true          # LogBERT requires sequential modeling
 semantic: true
-quantitative: false        # You used --quantitative
+quantitative: false        # You used --quantitative --------------------------------------- new Changes
 window_size: 120
 step_size: 1
-history_size: 120
+history_size: 120          # 30 --------------------------------------- new Changes
 
 # ===============================
 # Model configuration
@@ -23,8 +23,8 @@ model_name: LogBERT
 
 # Transformer parameters
 num_layers: 2
-hidden_size: 60
-embedding_dim: 60
+hidden_size:  300   # 60
+embedding_dim: 300     #60
 num_heads: 5
 dropout: 0.1
 topk: 10
