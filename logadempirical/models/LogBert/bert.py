@@ -36,7 +36,8 @@ class BERT(nn.Module):
         self.transformer_blocks = nn.ModuleList(
             [TransformerBlock(hidden, attn_heads, hidden * 2, dropout) for _ in range(n_layers)])
 
-    def forward(self, x, segment_info=None, time_info=None):
+    #def forward(self, x, segment_info=None, time_info=None):
+    def forward(self, sequence, segment_info=None, time_info=None):
         x = x.long()
 
         # Fix shape if input is [seq_len, batch] instead of [batch, seq_len]
@@ -56,7 +57,7 @@ class BERT(nn.Module):
         mask = mask.expand(batch_size, 1, seq_len, seq_len)
 
         x = self.embedding(x, segment_info=segment_info, time_info=time_info)
-
+        #x = self.embedding(x, segment_label=segment_info, time_info=time_info)
         for transformer in self.transformer_blocks:
             x = transformer.forward(x, mask)
 
