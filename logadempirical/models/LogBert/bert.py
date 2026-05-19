@@ -36,16 +36,27 @@ class BERT(nn.Module):
         self.transformer_blocks = nn.ModuleList(
             [TransformerBlock(hidden, attn_heads, hidden * 2, dropout) for _ in range(n_layers)])
 
+    def forward(self, x, segment_info=None, time_info=None):
+        x = x.long()
 
-    def forward(self, x , device = "cpu" ,segment_info=None, time_info=None):
-        # attention masking for padded token
-        # torch.ByteTensor([batch_size, 1, seq_len, seq_len)
-        mask = (x > 0).unsqueeze(1).repeat(1, x.size(1), 1).unsqueeze(1)
+        # Fix shape if input is [seq_len, batch] instead of [batch, seq_len]
+        if x.dim() == 2 and x.shape[0] < x.shape[1]:
+            x = x.transpose(0, 1).contiguous()
 
-        # embedding the indexed sequence to sequence of vectors
-        x = self.embedding(x, segment_info, time_info )
+            if segment_info is not None and segment_info.dim() == 2:
+                segment_info = segment_info.transpose(0, 1).contiguous()
 
-        # running over multiple transformer blocks
+            if time_info is not None and time_info.dim() == 2:
+                time_info = time_info.transpose(0, 1).contiguous()
+
+        batch_size, seq_len = x.size()
+
+        # Attention mask shape: [batch_size, 1, seq_len, seq_len]
+        mask = (x > 0).unsqueeze(1).unsqueeze(2)
+        mask = mask.expand(batch_size, 1, seq_len, seq_len)
+
+        x = self.embedding(x, segment_info=segment_info, time_info=time_info)
+
         for transformer in self.transformer_blocks:
             x = transformer.forward(x, mask)
 
