@@ -117,17 +117,23 @@ class BERTLog(nn.Module):
     def forward(self, batch, time_info=None, device="cpu"):
         """
         Robust LogBERT forward pass.
-        Handles sequential input, disables invalid segment labels,
-        uses last timestep prediction, and checks label range before NLLLoss.
+        Mini-fix included:
+        - If batch is tuple/list, use batch[3] as label when available.
+        - This avoids using sequence/session indexes as labels.
         """
 
         # --- Ensure batch is a dict ---
         if isinstance(batch, (list, tuple)):
             batch_dict = {"sequential": batch[0]}
-            if len(batch) > 1:
+
+            # IMPORTANT:
+            # batch[1] was giving huge values like 408705, 950433, etc.
+            # Those are not event labels. For your loader, the real labels are likely batch[3].
+            if len(batch) >= 4:
+                batch_dict["label"] = batch[3]
+            elif len(batch) > 1:
                 batch_dict["label"] = batch[1]
-            if len(batch) > 2:
-                batch_dict["segment_info"] = batch[2]
+
             batch = batch_dict
 
         # --- Process sequences ---
@@ -150,8 +156,8 @@ class BERTLog(nn.Module):
         batch_size, seq_len = x.size()
 
         # --- Disable segment_info ---
-        # Previous error showed segment_info contained event IDs like 146,
-        # not valid segment labels 0/1.
+        # Previous errors showed segment_info contained event IDs like 146,
+        # not valid BERT segment labels 0/1.
         segment_info = None
 
         # --- Process time_info ---
@@ -169,7 +175,6 @@ class BERTLog(nn.Module):
             if time_info.dim() == 2 and time_info.shape[0] < time_info.shape[1]:
                 time_info = time_info.transpose(0, 1).contiguous()
 
-            # Match sequence length
             if time_info.size(1) < seq_len:
                 diff = seq_len - time_info.size(1)
                 time_info = torch.cat(
