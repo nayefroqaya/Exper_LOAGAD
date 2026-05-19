@@ -117,21 +117,17 @@ class BERTLog(nn.Module):
     def forward(self, batch, time_info=None, device="cpu"):
         """
         Robust LogBERT forward pass.
-        Mini-fix included:
-        - If batch is tuple/list, use batch[3] as label when available.
-        - This avoids using sequence/session indexes as labels.
+        Auto-detects the correct label tensor from tuple/list batches.
         """
+
+        original_batch = batch
 
         # --- Ensure batch is a dict ---
         if isinstance(batch, (list, tuple)):
             batch_dict = {"sequential": batch[0]}
 
-            # IMPORTANT:
-            # batch[1] was giving huge values like 408705, 950433, etc.
-            # Those are not event labels. For your loader, the real labels are likely batch[3].
-            if len(batch) >= 4:
-                batch_dict["label"] = batch[3]
-            elif len(batch) > 1:
+            # Temporary label; if wrong, we auto-detect the correct one later
+            if len(batch) > 1:
                 batch_dict["label"] = batch[1]
 
             batch = batch_dict
@@ -156,8 +152,6 @@ class BERTLog(nn.Module):
         batch_size, seq_len = x.size()
 
         # --- Disable segment_info ---
-        # Previous errors showed segment_info contained event IDs like 146,
-        # not valid BERT segment labels 0/1.
         segment_info = None
 
         # --- Process time_info ---
@@ -185,7 +179,7 @@ class BERTLog(nn.Module):
         else:
             time_info = None
 
-        # --- Process labels ---
+        # --- Process initial labels ---
         y = batch.get("label", None)
 
         if y is not None:
@@ -196,7 +190,6 @@ class BERTLog(nn.Module):
             else:
                 y = torch.tensor(y, dtype=torch.long, device=device)
 
-            # If y accidentally has shape [batch, seq_len], use last label
             if y.dim() == 2:
                 if y.shape[0] < y.shape[1]:
                     y = y.transpose(0, 1).contiguous()
@@ -217,24 +210,77 @@ class BERTLog(nn.Module):
         logits = final_scores
         probabilities = torch.softmax(final_scores, dim=-1)
 
+        # --- Helper: check if a batch item can be the label tensor ---
+        def normalize_possible_label(t):
+            if not isinstance(t, torch.Tensor):
+                return None
+
+            tt = t.to(device).long()
+
+            if tt.dim() == 2:
+                if tt.shape[0] < tt.shape[1]:
+                    tt = tt.transpose(0, 1).contiguous()
+                tt = tt[:, -1]
+
+            if tt.dim() != 1:
+                return None
+
+            if tt.numel() != final_scores.size(0):
+                return None
+
+            return tt
+
         # --- Loss calculation ---
         loss = None
-        if y is not None and self.criterion is not None:
-            y = y.long()
-
+        if self.criterion is not None:
             n_classes = final_scores.size(-1)
 
-            if y.min().item() < 0 or y.max().item() >= n_classes:
-                print("BAD LOSS TARGET FOUND")
-                print("final_scores shape:", final_scores.shape)
-                print("n_classes:", n_classes)
-                print("y shape:", y.shape)
-                print("y min:", y.min().item())
-                print("y max:", y.max().item())
-                print("bad y values:", y[(y < 0) | (y >= n_classes)][:50])
-                raise ValueError("Target label out of range for NLLLoss.")
+            y_is_valid = (y is not None and y.dim() == 1 and y.numel() == final_scores.size(
+                0) and y.min().item() >= 0 and y.max().item() < n_classes)
 
-            loss = self.criterion(final_scores.float(), y)
+            # If current y is invalid, search original tuple/list batch
+            if not y_is_valid:
+                found_y = None
+
+                if isinstance(original_batch, (list, tuple)):
+                    for i, item in enumerate(original_batch):
+                        candidate = normalize_possible_label(item)
+
+                        if candidate is None:
+                            continue
+
+                        if candidate.min().item() >= 0 and candidate.max().item() < n_classes:
+                            found_y = candidate
+                            print(f"Using batch[{i}] as label")
+                            break
+
+                if found_y is None:
+                    print("BAD LOSS TARGET FOUND")
+                    print("final_scores shape:", final_scores.shape)
+                    print("n_classes:", n_classes)
+
+                    if y is not None:
+                        print("y shape:", y.shape)
+                        print("y min:", y.min().item())
+                        print("y max:", y.max().item())
+                        print("bad y values:", y[(y < 0) | (y >= n_classes)][:50])
+
+                    if isinstance(original_batch, (list, tuple)):
+                        print("Batch item debug:")
+                        for i, item in enumerate(original_batch):
+                            if isinstance(item, torch.Tensor):
+                                item_cpu = item.detach()
+                                print(f"batch[{i}] shape={tuple(item.shape)}, "
+                                      f"min={item_cpu.min().item()}, "
+                                      f"max={item_cpu.max().item()}")
+                            else:
+                                print(f"batch[{i}] type={type(item)}")
+
+                    raise ValueError("Could not find valid label tensor in batch.")
+
+                y = found_y
+
+            loss = self.criterion(final_scores.float(), y.long())
 
         # --- Return output ---
         return ModelOutput(logits=logits, probabilities=probabilities, loss=loss, embeddings=token_scores)
