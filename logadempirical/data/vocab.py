@@ -15,6 +15,51 @@ def read_json(filename):
 
 
 class Vocab(object):
+
+    def __init__(self, logs, emb_file="embeddings.json", embedding_dim=100):
+
+        self.stoi = {}
+        self.itos = ['padding']
+        self.pad_token = "padding"
+        self.unk_token = "<unk>"
+
+        for line in logs:
+            self.itos.extend(line)
+
+        self.mask_index = 4
+
+        # Build vocabulary
+        self.itos = ['padding'] + list(set(self.itos))
+
+        # IMPORTANT: add unknown token into the vocabulary
+        # so unk_index is valid for nn.Embedding
+        if self.unk_token not in self.itos:
+            self.itos.append(self.unk_token)
+
+        self.unk_index = len(self.itos) - 1
+        self.stoi = {e: i for i, e in enumerate(self.itos)}
+
+        # Load semantic vectors
+        self.semantic_vectors = read_json(emb_file)
+
+        # Force all vectors to have the same dimension
+        fixed_vectors = {}
+        for k, v in self.semantic_vectors.items():
+            if isinstance(v, list) and len(v) == embedding_dim:
+                fixed_vectors[k] = v
+            else:
+                fixed_vectors[k] = [0] * embedding_dim
+
+        self.semantic_vectors = fixed_vectors
+
+        # Add vectors for padding and unknown
+        self.semantic_vectors[self.pad_token] = [-1] * embedding_dim
+        self.semantic_vectors[self.unk_token] = [0] * embedding_dim
+
+        self.mapping = {}
+
+
+    '''
     def __init__(self, logs, emb_file="embeddings.json", embedding_dim=100):
 
         self.stoi = {}
@@ -34,7 +79,7 @@ class Vocab(object):
                                  for k, v in self.semantic_vectors.items()}
         self.semantic_vectors[self.pad_token] = [-1] * embedding_dim
         self.mapping = {}
-
+    '''
     def __len__(self):
         return len(self.itos)
 
