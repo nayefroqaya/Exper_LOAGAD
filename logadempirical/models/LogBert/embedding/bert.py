@@ -42,7 +42,7 @@ class BERTEmbedding(nn.Module):
     #        x = x + self.time_embed(time_info)
     #    return self.dropout(x)
 
-    def forward(self, sequence, segment_label=None, time_info=None):
+    def forward(self, sequence, segment_info=None, time_info=None):
         sequence = sequence.long()
 
         batch_size, seq_len = sequence.size()
@@ -57,13 +57,14 @@ class BERTEmbedding(nn.Module):
         x = self.position(position_ids)
         x = x + token_x
 
-        # Only use segment embedding if labels are valid segment IDs: 0 or 1
-        if segment_label is not None:
-            segment_label = segment_label.long()
+        # Only use segment embedding if segment_info is valid 0/1 labels.
+        # If it contains event IDs like 146, skip it.
+        if segment_info is not None:
+            segment_info = segment_info.long()
 
-            if segment_label.shape == sequence.shape:
-                if segment_label.min().item() >= 0 and segment_label.max().item() <= 1:
-                    x = x + self.segment(segment_label)
+            if segment_info.shape == sequence.shape:
+                if segment_info.min().item() >= 0 and segment_info.max().item() <= 1:
+                    x = x + self.segment(segment_info)
 
         if self.is_time:
             x = x + self.time_embed(time_info)
