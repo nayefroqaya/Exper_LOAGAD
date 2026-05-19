@@ -117,7 +117,8 @@ class BERTLog(nn.Module):
     def forward(self, batch, time_info=None, device="cpu"):
         """
         Robust LogBERT forward pass.
-        Handles sequential input, optional segment/time info, and one label per sequence.
+        Handles sequential input, disables invalid segment labels,
+        uses last timestep prediction, and checks label range before NLLLoss.
         """
 
         # --- Ensure batch is a dict ---
@@ -148,9 +149,9 @@ class BERTLog(nn.Module):
 
         batch_size, seq_len = x.size()
 
-        # --- Process segment_info ---
-        # Your segment_info was containing event IDs like 146, which is invalid.
-        # For LogBERT here, safest is to disable segment embedding.
+        # --- Disable segment_info ---
+        # Previous error showed segment_info contained event IDs like 146,
+        # not valid segment labels 0/1.
         segment_info = None
 
         # --- Process time_info ---
@@ -199,7 +200,7 @@ class BERTLog(nn.Module):
         # --- Forward pass through BERT ---
         bert_out = self.bert(x, segment_info=segment_info, time_info=time_info)
 
-        # mask_lm output: [batch_size, seq_len, vocab_size]
+        # token_scores: [batch_size, seq_len, vocab_size]
         token_scores = self.mask_lm(bert_out)
 
         # Since y is one label per sequence, use only the last timestep
@@ -214,25 +215,24 @@ class BERTLog(nn.Module):
         # --- Loss calculation ---
         loss = None
         if y is not None and self.criterion is not None:
-            loss = self.criterion(final_scores.float(), y.long())
+            y = y.long()
+
+            n_classes = final_scores.size(-1)
+
+            if y.min().item() < 0 or y.max().item() >= n_classes:
+                print("BAD LOSS TARGET FOUND")
+                print("final_scores shape:", final_scores.shape)
+                print("n_classes:", n_classes)
+                print("y shape:", y.shape)
+                print("y min:", y.min().item())
+                print("y max:", y.max().item())
+                print("bad y values:", y[(y < 0) | (y >= n_classes)][:50])
+                raise ValueError("Target label out of range for NLLLoss.")
+
+            loss = self.criterion(final_scores.float(), y)
 
         # --- Return output ---
         return ModelOutput(logits=logits, probabilities=probabilities, loss=loss, embeddings=token_scores)
-
-
-    def save(self, path):
-        torch.save(self.state_dict(), path)
-
-    def load(self, path):
-        self.load_state_dict(torch.load(path))
-
-    def predict(self, src, device="cpu"):
-        del src['label']
-        return self.forward(src, device=device).probabilities
-
-    def predict_class(self, src, top_k=1, device="cpu"):
-        del src['label']
-        return torch.topk(self.forward(src, device=device).probabilities, k=top_k, dim=1).indices
 
 
 class MaskedLogModel(nn.Module):
