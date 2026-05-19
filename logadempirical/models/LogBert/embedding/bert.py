@@ -42,40 +42,29 @@ class BERTEmbedding(nn.Module):
     #        x = x + self.time_embed(time_info)
     #    return self.dropout(x)
 
-    def forward(self, sequence, segment_label=None, time_info=None):
-        sequence = sequence.long()
 
-        # Fix shape if input is [seq_len, batch] instead of [batch, seq_len]
-        if sequence.dim() == 2 and sequence.shape[0] < sequence.shape[1]:
-            sequence = sequence.transpose(0, 1).contiguous()
+    def forward(self, x, segment_info=None, time_info=None):
+            x = x.long()
 
-        batch_size, seq_len = sequence.size()
+            # Fix shape if input is [seq_len, batch] instead of [batch, seq_len]
+            if x.dim() == 2 and x.shape[0] < x.shape[1]:
+                x = x.transpose(0, 1).contiguous()
 
-        # Token embedding: event IDs
-        token_x = self.token(sequence)
+                if segment_info is not None and segment_info.dim() == 2:
+                    segment_info = segment_info.transpose(0, 1).contiguous()
 
-        # Position embedding: positions 0, 1, 2, ..., seq_len - 1
-        position_ids = torch.arange(seq_len, dtype=torch.long, device=sequence.device).unsqueeze(0).expand(batch_size,
-                                                                                                           seq_len)
+                if time_info is not None and time_info.dim() == 2:
+                    time_info = time_info.transpose(0, 1).contiguous()
 
-        x = self.position(position_ids)
-        x = x + token_x
+            batch_size, seq_len = x.size()
 
-        # Only use segment embedding if labels are real segment IDs: 0 or 1.
-        # If segment_label contains event IDs like 146, skip it.
-        if segment_label is not None:
-            segment_label = segment_label.long()
+            # Correct attention mask shape: [batch_size, 1, seq_len, seq_len]
+            mask = (x > 0).unsqueeze(1).unsqueeze(2)
+            mask = mask.expand(batch_size, 1, seq_len, seq_len)
 
-            if segment_label.shape != sequence.shape:
-                if segment_label.dim() == 2 and segment_label.shape[0] < segment_label.shape[1]:
-                    segment_label = segment_label.transpose(0, 1).contiguous()
+            x = self.embedding(x, segment_info=segment_info, time_info=time_info)
 
-            if segment_label.min().item() >= 0 and segment_label.max().item() <= 1:
-                x = x + self.segment(segment_label)
+            for transformer in self.transformer_blocks:
+                x = transformer.forward(x, mask)
 
-        if self.is_time:
-            x = x + self.time_embed(time_info)
-
-        return self.dropout(x)
-
-
+            return x
