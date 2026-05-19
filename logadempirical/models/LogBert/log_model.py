@@ -32,7 +32,7 @@ class BERTLog(nn.Module):
         self.fc2 = nn.Linear(vocab_size, n_class)  # sửa đổi so với gốc
         self.criterion = nn.NLLLoss()
         # self.result = {"logkey_output": None, "cls_output": None, }
-
+    '''
     def forward(self, batch, time_info=None, device="cpu"):
         """
            Robust LogBERT forward pass.
@@ -112,6 +112,113 @@ class BERTLog(nn.Module):
 
         # --- Return output ---
         return ModelOutput(logits=logits, probabilities=probabilities, loss=loss, embeddings=x)
+    '''
+
+    def forward(self, batch, time_info=None, device="cpu"):
+        """
+        Robust LogBERT forward pass.
+        Handles sequential input, optional segment/time info, and one label per sequence.
+        """
+
+        # --- Ensure batch is a dict ---
+        if isinstance(batch, (list, tuple)):
+            batch_dict = {"sequential": batch[0]}
+            if len(batch) > 1:
+                batch_dict["label"] = batch[1]
+            if len(batch) > 2:
+                batch_dict["segment_info"] = batch[2]
+            batch = batch_dict
+
+        # --- Process sequences ---
+        x = batch["sequential"]
+
+        if isinstance(x, list):
+            sequences = [torch.tensor(seq, dtype=torch.long, device=device) for seq in x]
+            x = pad_sequence(sequences, batch_first=True, padding_value=0)
+
+        elif isinstance(x, torch.Tensor):
+            x = x.to(device).long()
+
+        else:
+            raise TypeError(f"Unsupported type for batch['sequential']: {type(x)}")
+
+        # Fix shape if input is [seq_len, batch] instead of [batch, seq_len]
+        if x.dim() == 2 and x.shape[0] < x.shape[1]:
+            x = x.transpose(0, 1).contiguous()
+
+        batch_size, seq_len = x.size()
+
+        # --- Process segment_info ---
+        # Your segment_info was containing event IDs like 146, which is invalid.
+        # For LogBERT here, safest is to disable segment embedding.
+        segment_info = None
+
+        # --- Process time_info ---
+        if time_info is not None:
+            if isinstance(time_info, list):
+                times = [torch.tensor(t, dtype=torch.long, device=device) for t in time_info]
+                time_info = pad_sequence(times, batch_first=True, padding_value=0)
+
+            elif isinstance(time_info, torch.Tensor):
+                time_info = time_info.to(device).long()
+
+            else:
+                raise TypeError(f"Unsupported type for time_info: {type(time_info)}")
+
+            if time_info.dim() == 2 and time_info.shape[0] < time_info.shape[1]:
+                time_info = time_info.transpose(0, 1).contiguous()
+
+            # Match sequence length
+            if time_info.size(1) < seq_len:
+                diff = seq_len - time_info.size(1)
+                time_info = torch.cat(
+                    [time_info, torch.zeros(time_info.size(0), diff, device=device, dtype=torch.long)], dim=1)
+            elif time_info.size(1) > seq_len:
+                time_info = time_info[:, :seq_len]
+
+        else:
+            time_info = None
+
+        # --- Process labels ---
+        y = batch.get("label", None)
+
+        if y is not None:
+            if isinstance(y, list):
+                y = torch.tensor(y, dtype=torch.long, device=device)
+            elif isinstance(y, torch.Tensor):
+                y = y.to(device).long()
+            else:
+                y = torch.tensor(y, dtype=torch.long, device=device)
+
+            # If y accidentally has shape [batch, seq_len], use last label
+            if y.dim() == 2:
+                if y.shape[0] < y.shape[1]:
+                    y = y.transpose(0, 1).contiguous()
+                y = y[:, -1]
+
+        # --- Forward pass through BERT ---
+        bert_out = self.bert(x, segment_info=segment_info, time_info=time_info)
+
+        # mask_lm output: [batch_size, seq_len, vocab_size]
+        token_scores = self.mask_lm(bert_out)
+
+        # Since y is one label per sequence, use only the last timestep
+        if token_scores.dim() == 3:
+            final_scores = token_scores[:, -1, :]  # [batch_size, vocab_size]
+        else:
+            final_scores = token_scores
+
+        logits = final_scores
+        probabilities = torch.softmax(final_scores, dim=-1)
+
+        # --- Loss calculation ---
+        loss = None
+        if y is not None and self.criterion is not None:
+            loss = self.criterion(final_scores.float(), y.long())
+
+        # --- Return output ---
+        return ModelOutput(logits=logits, probabilities=probabilities, loss=loss, embeddings=token_scores)
+
 
     def save(self, path):
         torch.save(self.state_dict(), path)

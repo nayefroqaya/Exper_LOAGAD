@@ -23,8 +23,8 @@ model_name: LogBERT
 
 # Transformer parameters
 num_layers: 2
-hidden_size:  300   # 60
-embedding_dim: 300     #60
+hidden_size:  300   # 60--------------------------------------- new Changes
+embedding_dim: 300     #60--------------------------------------- new Changes
 num_heads: 5
 dropout: 0.1
 topk: 10
