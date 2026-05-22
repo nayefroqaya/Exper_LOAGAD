@@ -9,7 +9,7 @@ dataset_name:  TH_1G
 embeddings: embeddings_tfidf.json
 
 # data preprocessing
-grouping: sliding # sliding  # sliding #session
+grouping: sliding # sliding  # sliding #session .
 session_level: entry
 sequential: false
 semantic: true
