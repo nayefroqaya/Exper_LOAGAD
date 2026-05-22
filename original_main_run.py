@@ -400,375 +400,122 @@ def train_and_eval(args: argparse.Namespace,
     return train_time_min, test_time_min, acc, f1, pre, rec
 
 
-
-# ============================================================
-# Dataset paths and domain experiment helpers
-# Minimal changes: only replace fixed dataframe loading in run(args)
-# ============================================================
-
-DATASETS = {
-    "BGL": {
-        "train": "/storage/home/roqaya/Exper_LogForm/datasets/BGL/1_BGL_Splitted_Datasets/train_df.pkl",
-        "val":   "/storage/home/roqaya/Exper_LogForm/datasets/BGL/1_BGL_Splitted_Datasets/val_df.pkl",
-        "test":  "/storage/home/roqaya/Exper_LogForm/datasets/BGL/1_BGL_Splitted_Datasets/test_df.pkl",
-    },
-    "HDFS": {
-        "train": "/storage/home/roqaya/Exper_LogForm/datasets/HDFS/1_HDFS_Splitted_Datasets/train_df.pkl",
-        "val":   "/storage/home/roqaya/Exper_LogForm/datasets/HDFS/1_HDFS_Splitted_Datasets/val_df.pkl",
-        "test":  "/storage/home/roqaya/Exper_LogForm/datasets/HDFS/1_HDFS_Splitted_Datasets/test_df.pkl",
-    },
-    "TH_1G": {
-        "train": "/storage/home/roqaya/Exper_LogForm/datasets/TH_1G/1_TH_1G_Splitted_Datasets/train_df.pkl",
-        "val":   "/storage/home/roqaya/Exper_LogForm/datasets/TH_1G/1_TH_1G_Splitted_Datasets/val_df.pkl",
-        "test":  "/storage/home/roqaya/Exper_LogForm/datasets/TH_1G/1_TH_1G_Splitted_Datasets/test_df.pkl",
-    },
-    "SP_150MB_ratio": {
-        "train": "/storage/home/roqaya/Exper_LogForm/datasets/SP_150MB_ratio/1_SP_150MB_ratio_Splitted_Datasets/train_df.pkl",
-        "val":   "/storage/home/roqaya/Exper_LogForm/datasets/SP_150MB_ratio/1_SP_150MB_ratio_Splitted_Datasets/val_df.pkl",
-        "test":  "/storage/home/roqaya/Exper_LogForm/datasets/SP_150MB_ratio/1_SP_150MB_ratio_Splitted_Datasets/test_df.pkl",
-    },
-}
-
-
-def fix_label_column(df):
-    """
-    Keep one clean label column named Label.
-    If Original_Label exists, use it as the final Label column.
-    """
-    df = df.copy()
-
-    if "Original_Label" in df.columns:
-        if "Label" in df.columns:
-            df = df.drop(columns=["Label"])
-        df = df.rename(columns={"Original_Label": "Label"})
-
-    return df
-
-
-def load_dataset_df(dataset_name):
-    """
-    Load train / val / test dataframe for one dataset.
-    """
-    if dataset_name not in DATASETS:
-        raise ValueError(
-            f"Unknown dataset: {dataset_name}. Available datasets: {list(DATASETS.keys())}"
-        )
-
-    paths = DATASETS[dataset_name]
-
-    df_train = pd.read_pickle(paths["train"])
-    df_val = pd.read_pickle(paths["val"])
-    df_test = pd.read_pickle(paths["test"])
-
-    df_train = fix_label_column(df_train)
-    df_val = fix_label_column(df_val)
-    df_test = fix_label_column(df_test)
-
-    return df_train, df_val, df_test
-
-
-def get_target_normal_df(df):
-    """
-    Select only Normal samples from target train.
-    Supports numeric and string labels.
-    """
-    return df[
-        (df["Label"] == 0) |
-        (df["Label"] == "0") |
-        (df["Label"] == "Normal") |
-        (df["Label"] == "normal")
-    ].copy()
-
-
-def prepare_domain_case(case,
-                        target_dataset,
-                        source_datasets=None,
-                        target_normal_fraction=0.20,
-                        random_seed=42):
-    """
-    Supported cases:
-
-    1) in_domain:
-       train = target train
-       val   = target val
-       test  = target test
-
-    2) cross_dataset_with_fraction:
-       train = source train + fraction of target normal train
-       val   = target val
-       test  = target test untouched
-
-    Note:
-    Using target validation is not test leakage, because target test is untouched.
-    But it means model selection is tuned on target-domain validation data.
-    """
-    if source_datasets is None:
-        source_datasets = []
-
-    np.random.seed(random_seed)
-
-    if case == "in_domain":
-        df_train, df_val, df_test = load_dataset_df(target_dataset)
-
-        print("\n==============================")
-        print("In-domain experiment")
-        print("==============================")
-        print("Target dataset:", target_dataset)
-        print("Train = target train")
-        print("Val   = target val")
-        print("Test  = target test")
-        print("Train size:", len(df_train))
-        print("Val size:", len(df_val))
-        print("Test size:", len(df_test))
-        print("\nTrain label distribution:")
-        print(df_train["Label"].value_counts())
-        print("\nVal label distribution:")
-        print(df_val["Label"].value_counts())
-        print("\nTest label distribution:")
-        print(df_test["Label"].value_counts())
-
-        return df_train, df_val, df_test
-
-    elif case == "cross_dataset_with_fraction":
-        if len(source_datasets) == 0:
-            raise ValueError("For cross_dataset_with_fraction, source_datasets must not be empty.")
-
-        source_train_list = []
-
-        print("\n==============================")
-        print("Cross-dataset with target normal fraction")
-        print("==============================")
-        print("Sources:", source_datasets)
-        print("Target:", target_dataset)
-        print("Target normal fraction:", target_normal_fraction)
-        print("Train = source train + fraction of target normal train")
-        print("Val   = target val")
-        print("Test  = target test untouched")
-
-        for source_name in source_datasets:
-            src_train, src_val, src_test = load_dataset_df(source_name)
-            source_train_list.append(src_train)
-
-            print("\nLoaded source dataset:", source_name)
-            print("Source train used:", len(src_train))
-            print("Source val NOT used:", len(src_val))
-            print("Source test NOT used:", len(src_test))
-            print("\nSource train label distribution:")
-            print(src_train["Label"].value_counts())
-
-        source_train = pd.concat(source_train_list, ignore_index=True)
-
-        target_train, target_val, target_test = load_dataset_df(target_dataset)
-
-        target_normal_train = get_target_normal_df(target_train)
-        number_to_take = int(len(target_normal_train) * target_normal_fraction)
-
-        if number_to_take > 0:
-            target_normal_sample = target_normal_train.sample(
-                n=number_to_take,
-                random_state=random_seed
-            )
-        else:
-            target_normal_sample = target_normal_train.iloc[0:0].copy()
-
-        df_train = pd.concat([source_train, target_normal_sample], ignore_index=True)
-        df_val = target_val
-        df_test = target_test
-
-        print("\n==============================")
-        print("Final cross-dataset data")
-        print("==============================")
-        print("Source train:", len(source_train))
-        print("Target train:", len(target_train))
-        print("Target normal train:", len(target_normal_train))
-        print("Target normal used:", len(target_normal_sample))
-        print("Target val used:", len(df_val))
-        print("Target test untouched:", len(df_test))
-        print("Final train:", len(df_train))
-        print("Final val:", len(df_val))
-        print("Final test:", len(df_test))
-        print("\nFinal train label distribution:")
-        print(df_train["Label"].value_counts())
-        print("\nTarget val label distribution:")
-        print(df_val["Label"].value_counts())
-        print("\nTarget test label distribution:")
-        print(df_test["Label"].value_counts())
-
-        return df_train, df_val, df_test
-
-    else:
-        raise ValueError("case must be either 'in_domain' or 'cross_dataset_with_fraction'")
-
-
 def run(args):
     logger = getLogger(args.model_name)
     logger.info(accelerator.state)
     logger.setLevel(logging.INFO if accelerator.is_local_main_process else logging.ERROR)
     os.makedirs(args.output_dir, exist_ok=True)
 
-    # ============================================================
-    # Experiment settings
-    # Change ONLY this block when you want another experiment
-    # ============================================================
-
-    # -----------------------------
-    # Option 1: In-domain
-    # train = target train
-    # val   = target val
-    # test  = target test
-    # -----------------------------
-    CASE = "in_domain"
-    TARGET_DATASET = args.dataset_name
-    SOURCE_DATASETS = []          # not used for in-domain
-    TARGET_NORMAL_FRACTION = 0.20 # not used for in-domain
-    RANDOM_SEED = 42
-
-    # -----------------------------
-    # Option 2: Cross-dataset with fraction
-    # train = source train + fraction of target normal train
-    # val   = target val
-    # test  = target test untouched
-    # -----------------------------
-    # CASE = "cross_dataset_with_fraction"
-    # TARGET_DATASET = args.dataset_name
-    # SOURCE_DATASETS = ["BGL"]
-    # TARGET_NORMAL_FRACTION = 0.20
-    # RANDOM_SEED = 42
-
-    # ============================================================
-    # Output directory
-    # ============================================================
-
-    if CASE == "in_domain":
-        experiment_name = f"in_domain_target_{TARGET_DATASET}"
-
-    elif CASE == "cross_dataset_with_fraction":
-        if len(SOURCE_DATASETS) == 0:
-            raise ValueError("SOURCE_DATASETS cannot be empty for cross_dataset_with_fraction")
-
-        source_name = "_".join(SOURCE_DATASETS)
-        fraction_name = str(TARGET_NORMAL_FRACTION).replace(".", "p")
-        experiment_name = (
-            f"cross_dataset_source_{source_name}"
-            f"_target_{TARGET_DATASET}"
-            f"_targetval_frac_{fraction_name}"
-        )
-
-    else:
-        raise ValueError("CASE must be either 'in_domain' or 'cross_dataset_with_fraction'")
-
+    #if args.grouping == "sliding":
+    #    args.output_dir = f"{args.output_dir}/{args.dataset_name}/sliding/W{args.window_size}_S{args.step_size}_C{args.is_chronological}_train{args.train_size}"
+    #else:
+    #    args.output_dir = f"{args.output_dir}/{args.dataset_name}/session/train{args.train_size}"
     if args.grouping == "sliding":
-        output_subdir = (
-            f"{args.output_dir}/{experiment_name}/{TARGET_DATASET}/sliding/"
-            f"W{args.window_size}_S{args.step_size}_C{args.is_chronological}"
-        )
+        output_subdir = f"{args.output_dir}/{args.dataset_name}/sliding/W{args.window_size}_S{args.step_size}_C{args.is_chronological}"
     else:
-        output_subdir = f"{args.output_dir}/{experiment_name}/{TARGET_DATASET}/session"
+        output_subdir = f"{args.output_dir}/{args.dataset_name}/session"
 
     os.makedirs(output_subdir, exist_ok=True)
     args.output_dir = output_subdir
 
-    print("\n==============================")
-    print("Experiment configuration")
-    print("==============================")
-    print("CASE:", CASE)
-    print("TARGET_DATASET:", TARGET_DATASET)
-    print("SOURCE_DATASETS:", SOURCE_DATASETS)
-    print("TARGET_NORMAL_FRACTION:", TARGET_NORMAL_FRACTION)
-    print("RANDOM_SEED:", RANDOM_SEED)
-    print("Output dir:", args.output_dir)
+    # first paper  : folder dataset
+    #file_path_train = 'dataset/BGL/1_BGL_Splitted_Datasets/train_df.pkl'
+    #file_path_test = 'dataset/BGL/1_BGL_Splitted_Datasets/test_df.pkl'
+    #file_path_val = 'dataset/BGL/1_BGL_Splitted_Datasets/val_df.pkl'
 
-    # ============================================================
-    # Prepare dataframe splits
-    # ============================================================
+    # second paper : folder datasets
 
-    df_train, df_val, df_test = prepare_domain_case(
-        case=CASE,
-        target_dataset=TARGET_DATASET,
-        source_datasets=SOURCE_DATASETS,
-        target_normal_fraction=TARGET_NORMAL_FRACTION,
-        random_seed=RANDOM_SEED
-    )
+    #file_path_train = '../NovaAD_Plus/datasets/SP_150MB_ratio/1_BGL_Splitted_Datasets/3_SP_150MB_ratio_train_df.pkl'
+    #file_path_test = '../NovaAD_Plus/datasets/SP_150MB_ratio/3_SP_150MB_ratio_Splitted_Datasets/3_SP_150MB_ratio_test_df.pkl'
+    #file_path_val = '../NovaAD_Plus/datasets/SP_150MB_ratio/3_SP_150MB_ratio_Splitted_Datasets/3_SP_150MB_ratio_val_df.pkl'
 
-    print("\n==============================")
-    print("Dataframe information")
-    print("==============================")
+    #paper3
 
-    print("\nTrain dataframe:")
-    df_train.info()
+    file_path_train = "/storage/home/roqaya/Exper_LogForm/datasets/SP_150MB_ratio/1_SP_150MB_ratio_Splitted_Datasets/train_df.pkl"
+    file_path_val = "/storage/home/roqaya/Exper_LogForm/datasets/SP_150MB_ratio/1_SP_150MB_ratio_Splitted_Datasets/val_df.pkl"
+    file_path_test = "/storage/home/roqaya/Exper_LogForm/datasets/SP_150MB_ratio/1_SP_150MB_ratio_Splitted_Datasets/test_df.pkl"
 
-    print("\nValidation dataframe:")
-    df_val.info()
+    # Read pickle file
+    df_train = pd.read_pickle(file_path_train)
+    df_test = pd.read_pickle(file_path_test)
+    df_val = pd.read_pickle(file_path_val)
 
-    print("\nTest dataframe:")
-    df_test.info()
+  #  df_train = df_train.rename(columns={'processed_EventTemplate': 'EventTemplate'})
+  #  df_test = df_test.rename(columns={'processed_EventTemplate': 'EventTemplate'})
+    print(' In run function ......')
+    #df_train.info()
+    #df_test.info()
+    #df_val.info()
 
-    print("\nTrain labels:")
+    print(df_train["Original_Label"].unique())
     print(df_train["Label"].unique())
 
-    print("\nValidation labels:")
-    print(df_val["Label"].unique())
-
-    print("\nTest labels:")
+    print(df_test["Original_Label"].unique())
     print(df_test["Label"].unique())
 
-    # ============================================================
-    # Convert dataframe to LOAD format
-    # This keeps your existing pipeline unchanged
-    # ============================================================
+    print(df_val["Original_Label"].unique())
+    print(df_val["Label"].unique())
+    #exit()
 
-    train_path, valid_path, test_path = process_dataset_from_df(
-        logger=logger,
-        df_train=df_train,
-        df_valid=df_val,
-        df_test=df_test,
-        output_dir=args.output_dir,
-        grouping=args.grouping,
-        window_size=args.window_size,
-        step_size=args.step_size,
-        session_type=args.session_level,
-        dataset_name=TARGET_DATASET,
-        data_dir=args.data_dir
-    )
+    df_train = df_train.drop(columns=['Label'])
+    df_test = df_test.drop(columns=['Label'])
+    df_val = df_val.drop(columns=['Label'])
+
+    df_train = df_train.rename(columns={'Original_Label': 'Label'})
+    df_test = df_test.rename(columns={'Original_Label': 'Label'})
+    df_val = df_val.rename(columns={'Original_Label': 'Label'})
+
+    df_train.info()
+    df_test.info()
+    df_val.info()
+    print(df_train['Label'].unique())
+    print(df_test['Label'].unique())
+    print(df_val['Label'].unique())
+
+    #output_dir = "/storage/home/roqaya/Exper_LOAGAD/output" #output_dir = "../../dataset/BGL/"
+    train_path, valid_path, test_path = process_dataset_from_df(logger=logger, df_train=df_train, df_valid=df_val,
+        df_test=df_test, output_dir=args.output_dir, grouping=args.grouping, window_size=args.window_size,
+        step_size=args.step_size, session_type=args.session_level, dataset_name=args.dataset_name,
+        data_dir=args.data_dir)
+    # ------- until here is OK..........
+    #output_dir = "/storage/home/roqaya/Exper_LOAGAD/output" #output_dir = "../../dataset/BGL/"
+    #train_path, test_path = process_dataset_from_df(logger=logger, df_train=df_train, df_test=df_test, output_dir=output_dir,
+    #    grouping="session",  # or "session for HDFS"
+    #    window_size=120, step_size=120, session_type="entry",  # or "time"
+    #    dataset_name="HDFS",  # or "BGL"
+    #    data_dir="../../dataset/"  # needed only for session mode (HDFS)
+    #)
+    #train_path, test_path = process_dataset(logger, data_dir=args.data_dir, output_dir=args.output_dir,
+    #                                        log_file=args.log_file,
+    #                                        dataset_name=args.dataset_name, grouping=args.grouping,
+    #                                        window_size=args.window_size, step_size=args.step_size,
+    #                                        train_size=args.train_size, is_chronological=args.is_chronological,
+    #                                        session_type=args.session_level)
+
+    # pdb.set_trace()
 
     os.makedirs(f"{args.output_dir}/vocabs", exist_ok=True)
-
     vocab_path = f"{args.output_dir}/vocabs/{args.model_name}.pkl"
-
     is_unsupervised = args.model_name in ["LogAnomaly", "DeepLog", "LogBERT"]
-
-    log_vocab = build_vocab(
-        vocab_path,
-        args.data_dir,
-        train_path,
-        args.embeddings,
-        embedding_dim=args.embedding_dim,
-        is_unsupervised=is_unsupervised,
-        logger=logger
-    )
-
+    log_vocab = build_vocab(vocab_path,
+                            args.data_dir,
+                            train_path,
+                            args.embeddings,
+                            embedding_dim=args.embedding_dim,
+                            is_unsupervised=is_unsupervised,
+                            logger=logger)
     model = build_model(args, vocab_size=len(log_vocab))
-
-    train_time, test_time, acc, f1, precision, recall = train_and_eval(
-        args,
-        train_path,
-        test_path,
-        valid_path,
-        log_vocab,
-        model,
-        is_unsupervised=is_unsupervised,
-        logger=logger
-    )
-
-    print("\n==============================")
-    print("Final Result")
-    print("==============================")
+    train_time, test_time, acc, f1, precision, recall= train_and_eval(args,
+                   train_path,
+                   test_path,
+                   valid_path,  # <-- add this
+                   log_vocab,
+                   model,
+                   is_unsupervised=is_unsupervised,
+                   logger=logger)
     print(f"Training time: {train_time:.2f} min")
     print(f"Testing time: {test_time:.2f} min")
-    print(f"Test Accuracy: {acc:.4f}")
-    print(f"F1: {f1:.4f}")
-    print(f"Precision: {precision:.4f}")
-    print(f"Recall: {recall:.4f}")
+    print(f"Test Accuracy: {acc:.4f}, F1: {f1:.4f}, Precision: {precision:.4f}, Recall: {recall:.4f}")
 
 
 if __name__ == "__main__":
