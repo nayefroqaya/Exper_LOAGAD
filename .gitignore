@@ -25,3 +25,4 @@ output/
 *.log
 
 >>>>>>> 2ab008a (Add .gitignore to ignore IDE, cache, datasets, logs)
+Codex.dmg
