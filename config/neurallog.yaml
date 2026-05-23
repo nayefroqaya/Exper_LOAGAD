@@ -1,12 +1,12 @@
 # dataset configuration
 #data_dir: ./dataset/HDFS
-data_dir:  ../LWADLS/datasets/HDFS  # -------------------Change here
-dataset_name:  HDFS             # -------------------Change here
+data_dir:  ../LWADLS/datasets/THG_1G  # -------------------Change here
+dataset_name:  THG_1G             # -------------------Change here
 #log_file: .log
 embeddings: embeddings_tfidf.json
 
 # data preprocessing
-grouping: session  # sliding  # sliding #session .  # -------------------Change here
+grouping: sliding  # sliding  # sliding #session .  # -------------------Change here
 session_level: entry
 sequential: false
 semantic: true
