@@ -612,13 +612,13 @@ def run(args):
     # For cross-dataset, change CASE and SOURCE_DATASETS only.
     # ============================================================
 
-    CASE = "in_domain"
-    TARGET_DATASET = args.dataset_name # come from yml file
-    #==============================
-    #CASE = "cross_dataset_with_fraction"
+    #CASE = "in_domain"
     #TARGET_DATASET = args.dataset_name # come from yml file
-    #SOURCE_DATASETS = ["BGL"]          # used only for cross_dataset_with_fraction
-    #TARGET_NORMAL_FRACTION = 0.20      # used only for cross_dataset_with_fraction
+    #==============================
+    CASE = "cross_dataset_with_fraction"
+    TARGET_DATASET = args.dataset_name # come from yml file
+    SOURCE_DATASETS = ["BGL"]          # used only for cross_dataset_with_fraction
+    TARGET_NORMAL_FRACTION = 0.20      # used only for cross_dataset_with_fraction
     RANDOM_SEED = 42
 
     if CASE == "cross_dataset_with_fraction":
@@ -681,9 +681,9 @@ def run(args):
         #file_path_val = '../NovaAD_Plus/datasets/BGL/1_BGL_Splitted_Datasets/val_df.pkl'
 
         # Third paper
-        file_path_train = '../LWADLS/datasets/SP_150MB_ratio/1_SP_150MB_ratio_Splitted_Datasets/train_df.pkl'
-        file_path_test = '../LWADLS/datasets/SP_150MB_ratio/1_SP_150MB_ratio_Splitted_Datasets/test_df.pkl'
-        file_path_val = '../LWADLS/datasets/SP_150MB_ratio/1_SP_150MB_ratio_Splitted_Datasets/val_df.pkl'
+        #file_path_train = '../LWADLS/datasets/HDFS/1_HDFS_Splitted_Datasets/train_df.pkl'
+        #file_path_test = '../LWADLS/datasets/HDFS/1_HDFS_Splitted_Datasets/test_df.pkl'
+        #file_path_val = '../LWADLS/datasets/HDFS/1_HDFS_Splitted_Datasets/val_df.pkl'
 
 
         # Read pickle file
