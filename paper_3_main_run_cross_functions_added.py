@@ -615,7 +615,7 @@ def run(args):
     #CASE = "in_domain"
     #TARGET_DATASET = args.dataset_name # come from yml file
     #==============================
-    #CASE = "cross_dataset_with_fraction"
+    CASE = "cross_dataset_with_fraction"
     TARGET_DATASET = args.dataset_name # come from yml file
     SOURCE_DATASETS = ["BGL"]          # used only for cross_dataset_with_fraction
     #TARGET_NORMAL_FRACTION = 0.20      # used only for cross_dataset_with_fraction
