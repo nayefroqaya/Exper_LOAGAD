@@ -425,9 +425,9 @@ def run(args):
 
     # second paper : folder datasets
 
-    file_path_train = '../NovaAD_Plus/datasets/BGL/1_BGL_Splitted_Datasets/1_BGL_train_df.pkl'
-    file_path_test = '../NovaAD_Plus/datasets/BGL/1_BGL_Splitted_Datasets/1_BGL_test_df.pkl'
-    file_path_val = '../NovaAD_Plus/datasets/BGL/1_BGL_Splitted_Datasets/1_BGL_val_df.pkl'
+    file_path_train = '../NovaAD_Plus/datasets/BGL/1_BGL_Splitted_Datasets/train_df.pkl'
+    file_path_test = '../NovaAD_Plus/datasets/BGL/1_BGL_Splitted_Datasets/test_df.pkl'
+    file_path_val = '../NovaAD_Plus/datasets/BGL/1_BGL_Splitted_Datasets/val_df.pkl'
 
     #paper3
 
