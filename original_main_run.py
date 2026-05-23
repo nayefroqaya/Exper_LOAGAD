@@ -431,9 +431,9 @@ def run(args):
 
     #paper3
 
-    file_path_train = "/storage/home/roqaya/Exper_LogForm/datasets/SP_150MB_ratio/1_SP_150MB_ratio_Splitted_Datasets/train_df.pkl"
-    file_path_val = "/storage/home/roqaya/Exper_LogForm/datasets/SP_150MB_ratio/1_SP_150MB_ratio_Splitted_Datasets/val_df.pkl"
-    file_path_test = "/storage/home/roqaya/Exper_LogForm/datasets/SP_150MB_ratio/1_SP_150MB_ratio_Splitted_Datasets/test_df.pkl"
+    file_path_train = "/storage/home/roqaya/Exper_LogForm/datasets/BGL/1_BGL_Splitted_Datasets/train_df.pkl"
+    file_path_val = "/storage/home/roqaya/Exper_LogForm/datasets/BGL/1_BGL_Splitted_Datasets/val_df.pkl"
+    file_path_test = "/storage/home/roqaya/Exper_LogForm/datasets/BGL/1_BGL_Splitted_Datasets/test_df.pkl"
 
     # Read pickle file
     df_train = pd.read_pickle(file_path_train)
