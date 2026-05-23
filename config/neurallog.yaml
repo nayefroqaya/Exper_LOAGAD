@@ -1,7 +1,7 @@
 # dataset configuration
 #data_dir: ./dataset/HDFS
-data_dir:  ../LWADLS/datasets/THG_1G  # -------------------Change here
-dataset_name:  THG_1G             # -------------------Change here
+data_dir:  ../LWADLS/datasets/TH_1G  # -------------------Change here
+dataset_name:  TH_1G             # -------------------Change here
 #log_file: .log
 embeddings: embeddings_tfidf.json
 
