@@ -1,7 +1,7 @@
 # dataset configuration
 #data_dir: ./dataset/HDFS
 data_dir:  ../LWADLS/datasets/HDFS  # -------------------Change here
-dataset_name:  HDFS .               # -------------------Change here
+dataset_name:  HDFS             # -------------------Change here
 #log_file: .log
 embeddings: embeddings_tfidf.json
 
