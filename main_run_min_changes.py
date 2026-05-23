@@ -419,9 +419,9 @@ def train_and_eval(args: argparse.Namespace,
 
 DATASETS = {
     "BGL": {
-        "train": "/storage/home/roqaya/Exper_LogForm/datasets/BGL/1_BGL_Splitted_Datasets/train_df.pkl",
-        "val":   "/storage/home/roqaya/Exper_LogForm/datasets/BGL/1_BGL_Splitted_Datasets/val_df.pkl",
-        "test":  "/storage/home/roqaya/Exper_LogForm/datasets/BGL/1_BGL_Splitted_Datasets/test_df.pkl",
+        "train": "/storage/home/roqaya/NovaAD_Plus/datasets/BGL/1_BGL_Splitted_Datasets/train_df.pkl",
+        "val":   "/storage/home/roqaya/NovaAD_Plus/datasets/BGL/1_BGL_Splitted_Datasets/val_df.pkl",
+        "test":  "/storage/home/roqaya/NovaAD_Plus/datasets/BGL/1_BGL_Splitted_Datasets/test_df.pkl",
     },
     "HDFS": {
         "train": "/storage/home/roqaya/Exper_LogForm/datasets/HDFS/1_HDFS_Splitted_Datasets/train_df.pkl",

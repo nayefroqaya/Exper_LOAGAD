@@ -1,7 +1,7 @@
 # dataset configuration
 #data_dir: ./dataset/SP_150MB_ratio  # first paper
 #data_dir:  ../NovaAD_Plus/datasets/SP_150MB_ratio   # second paper
-data_dir:  ../Exper_LogForm/datasets/BGL   # Third paper
+data_dir:  ../NovaAD_Plus/datasets/BGL   # Third paper
 
 dataset_name:  BGL
 #log_file: .log
