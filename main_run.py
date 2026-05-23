@@ -423,9 +423,9 @@ DATASETS = {
         "test":  "/storage/home/roqaya/Exper_LogForm/datasets/TH_1G/1_TH_1G_Splitted_Datasets/test_df.pkl",
     },
     "SP_150MB_ratio": {
-        "train": "/storage/home/roqaya/LWADLS/datasets/SP_150MB_ratio/1_SP_150MB_ratio_Splitted_Datasets/train_df.pkl",
-        "val":   "/storage/home/roqaya/LWADLS/datasets/SP_150MB_ratio/1_SP_150MB_ratio_Splitted_Datasets/val_df.pkl",
-        "test":  "/storage/home/roqaya/LWADLS/datasets/SP_150MB_ratio/1_SP_150MB_ratio_Splitted_Datasets/test_df.pkl",
+        "train": "/storage/home/roqaya/Exper_LogForm/datasets/SP_150MB_ratio/1_SP_150MB_ratio_Splitted_Datasets/train_df.pkl",
+        "val":   "/storage/home/roqaya/Exper_LogForm/datasets/SP_150MB_ratio/1_SP_150MB_ratio_Splitted_Datasets/val_df.pkl",
+        "test":  "/storage/home/roqaya/Exper_LogForm/datasets/SP_150MB_ratio/1_SP_150MB_ratio_Splitted_Datasets/test_df.pkl",
     },
 }
 
@@ -617,11 +617,11 @@ def run(args):
     # val   = target val
     # test  = target test
     # -----------------------------
-    CASE = "in_domain"
-    TARGET_DATASET = args.dataset_name
-    SOURCE_DATASETS = []          # not used for in-domain
-    TARGET_NORMAL_FRACTION = 0.20 # not used for in-domain
-    RANDOM_SEED = 42
+    #CASE = "in_domain"
+    #TARGET_DATASET = args.dataset_name
+    #SOURCE_DATASETS = []          # not used for in-domain
+    #TARGET_NORMAL_FRACTION = 0.20 # not used for in-domain
+    #RANDOM_SEED = 42
 
     # -----------------------------
     # Option 2: Cross-dataset with fraction
@@ -629,11 +629,11 @@ def run(args):
     # val   = target val
     # test  = target test untouched
     # -----------------------------
-    # CASE = "cross_dataset_with_fraction"
-    # TARGET_DATASET = args.dataset_name
-    # SOURCE_DATASETS = ["BGL"]
-    # TARGET_NORMAL_FRACTION = 0.20
-    # RANDOM_SEED = 42
+    CASE = "cross_dataset_with_fraction"
+    TARGET_DATASET = args.dataset_name
+    SOURCE_DATASETS = ["BGL"]
+    TARGET_NORMAL_FRACTION = 0.20
+    RANDOM_SEED = 42
 
     # ============================================================
     # Output directory
