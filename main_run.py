@@ -617,11 +617,11 @@ def run(args):
     # val   = target val
     # test  = target test
     # -----------------------------
-    #CASE = "in_domain"
-    #TARGET_DATASET = args.dataset_name
-    #SOURCE_DATASETS = []          # not used for in-domain
-    #TARGET_NORMAL_FRACTION = 0.20 # not used for in-domain
-    #RANDOM_SEED = 42
+    CASE = "in_domain"
+    TARGET_DATASET = args.dataset_name
+    SOURCE_DATASETS = []          # not used for in-domain
+    TARGET_NORMAL_FRACTION = 0.20 # not used for in-domain
+    RANDOM_SEED = 42
 
     # -----------------------------
     # Option 2: Cross-dataset with fraction
@@ -629,11 +629,11 @@ def run(args):
     # val   = target val
     # test  = target test untouched
     # -----------------------------
-    CASE = "cross_dataset_with_fraction"
-    TARGET_DATASET = args.dataset_name
-    SOURCE_DATASETS = ["BGL"]
-    TARGET_NORMAL_FRACTION = 0.20
-    RANDOM_SEED = 42
+    #CASE = "cross_dataset_with_fraction"
+    #TARGET_DATASET = args.dataset_name
+    #SOURCE_DATASETS = ["BGL"]
+    #TARGET_NORMAL_FRACTION = 0.20
+    #RANDOM_SEED = 42
 
     # ============================================================
     # Output directory
