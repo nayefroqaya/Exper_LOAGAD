@@ -423,9 +423,9 @@ DATASETS = {
         "test":  "/storage/home/roqaya/Exper_LogForm/datasets/TH_1G/1_TH_1G_Splitted_Datasets/test_df.pkl",
     },
     "SP_150MB_ratio": {
-        "train": "/storage/home/roqaya/Exper_LogForm/datasets/SP_150MB_ratio/1_SP_150MB_ratio_Splitted_Datasets/train_df.pkl",
-        "val":   "/storage/home/roqaya/Exper_LogForm/datasets/SP_150MB_ratio/1_SP_150MB_ratio_Splitted_Datasets/val_df.pkl",
-        "test":  "/storage/home/roqaya/Exper_LogForm/datasets/SP_150MB_ratio/1_SP_150MB_ratio_Splitted_Datasets/test_df.pkl",
+        "train": "/storage/home/roqaya/LWADLS/datasets/SP_150MB_ratio/1_SP_150MB_ratio_Splitted_Datasets/train_df.pkl",
+        "val":   "/storage/home/roqaya/LWADLS/datasets/SP_150MB_ratio/1_SP_150MB_ratio_Splitted_Datasets/val_df.pkl",
+        "test":  "/storage/home/roqaya/LWADLS/datasets/SP_150MB_ratio/1_SP_150MB_ratio_Splitted_Datasets/test_df.pkl",
     },
 }
 
