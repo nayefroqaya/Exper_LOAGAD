@@ -1,7 +1,7 @@
 # dataset configuration
 #data_dir: ./dataset/HDFS
-data_dir:  ../LWADLS/datasets/SP_150MB_ratio # -------------------Change here
-dataset_name:  SP_150MB_ratio
+data_dir:  ../LWADLS/datasets/TH_1G # -------------------Change here
+dataset_name:  TH_1G
 #log_file: .log
 embeddings: embeddings_tfidf.json
 
