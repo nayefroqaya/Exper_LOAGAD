@@ -681,9 +681,9 @@ def run(args):
         #file_path_val = '../NovaAD_Plus/datasets/BGL/1_BGL_Splitted_Datasets/val_df.pkl'
 
         # Third paper
-        #file_path_train = '../LWADLS/datasets/HDFS/1_HDFS_Splitted_Datasets/train_df.pkl'
-        #file_path_test = '../LWADLS/datasets/HDFS/1_HDFS_Splitted_Datasets/test_df.pkl'
-        #file_path_val = '../LWADLS/datasets/HDFS/1_HDFS_Splitted_Datasets/val_df.pkl'
+        file_path_train = '../LWADLS/datasets/BGL/1_BGL_Splitted_Datasets/train_df.pkl'
+        file_path_test = '../LWADLS/datasets/BGL/1_BGL_Splitted_Datasets/test_df.pkl'
+        file_path_val = '../LWADLS/datasets/BGL/1_BGL_Splitted_Datasets/val_df.pkl'
 
 
         # Read pickle file
