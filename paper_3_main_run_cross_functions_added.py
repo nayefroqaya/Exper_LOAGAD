@@ -617,7 +617,7 @@ def run(args):
     #==============================
     CASE = "cross_dataset_with_fraction"
     TARGET_DATASET = args.dataset_name # come from yml file
-    SOURCE_DATASETS = ["BGL","HDFS", "TH_1G"]          # used only for cross_dataset_with_fraction
+    SOURCE_DATASETS = ["BGL","HDFS", "SP_150MB_ratio"]          # used only for cross_dataset_with_fraction
     TARGET_NORMAL_FRACTION = 0.20      # used only for cross_dataset_with_fraction
     RANDOM_SEED = 42
 
