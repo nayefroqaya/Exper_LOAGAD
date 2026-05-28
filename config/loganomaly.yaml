@@ -1,6 +1,6 @@
 #data_dir: ./dataset/BGL
-data_dir:  ../LWADLS/datasets/TH_1G # -------------------Change here
-dataset_name:  TH_1G     # -------------------Change here
+data_dir:  ../LWADLS/datasets/BGL # -------------------Change here
+dataset_name:  BGL     # -------------------Change here
 #log_file: .log
 embeddings: embeddings_tfidf.json
 
