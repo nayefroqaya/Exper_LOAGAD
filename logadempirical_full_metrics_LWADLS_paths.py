@@ -398,9 +398,314 @@ def train_and_eval(args: argparse.Namespace,
     logger.info(f"Training completed in {train_time_min:.2f} minutes")
 
     logger.info(f"Test Result:: Acc: {acc:.4f}, Precision: {pre:.4f}, Recall: {rec:.4f}, F1: {f1:.4f}")
+
+    metrics = compute_static_metrics_from_summary(
+        session_labels=session_labels,
+        accuracy=acc,
+        precision=pre,
+        recall=rec,
+        f1=f1,
+        history_size=args.history_size,
+        fp_unit_cost=10.0,
+        fn_unit_cost=20.0,
+        delay_unit_cost=5.0,
+    )
+
+    save_static_metrics_report(
+        metrics=metrics,
+        output_dir=args.output_dir,
+        model_name=args.model_name
+    )
+
     return train_time_min, test_time_min, acc, f1, pre, rec
 
 
+
+
+# ============================================================
+# Full static-baseline metrics for normal/static approaches
+# ============================================================
+
+def _as_fraction(x):
+    """Convert 85.0-style percentages to 0.85-style fractions when needed."""
+    x = float(x)
+    return x / 100.0 if x > 1.0 else x
+
+
+def _binary_label_array(labels):
+    """Convert label values to 0=normal, 1=anomaly."""
+    y = []
+    for label in labels:
+        if isinstance(label, (list, tuple, np.ndarray)):
+            label = np.max(label)
+        if label in [1, "1", "Anomaly", "anomaly", "Abnormal", "abnormal"]:
+            y.append(1)
+        else:
+            y.append(0)
+    return np.asarray(y, dtype=int)
+
+
+def compute_static_metrics_from_summary(
+    session_labels,
+    accuracy,
+    precision,
+    recall,
+    f1,
+    history_size=120,
+    fp_unit_cost=10.0,
+    fn_unit_cost=20.0,
+    delay_unit_cost=5.0,
+):
+    """
+    Compute all available metrics for a static/full-sequence baseline.
+
+    The model does not output step-wise alert timing. Therefore:
+      Avg detection ratio = 1.0 for detected anomalies
+      EDR@25/50/75 = 0.0
+      Delay cost = TP * delay_unit_cost
+    """
+    y_true = _binary_label_array(session_labels)
+    total = int(len(y_true))
+    total_anomalies = int(np.sum(y_true == 1))
+    total_normals = int(np.sum(y_true == 0))
+
+    accuracy = _as_fraction(accuracy)
+    precision = _as_fraction(precision)
+    recall = _as_fraction(recall)
+    f1 = _as_fraction(f1)
+
+    # Infer confusion matrix from recall and precision.
+    tp = int(round(recall * total_anomalies))
+    tp = max(0, min(tp, total_anomalies))
+    fn = total_anomalies - tp
+
+    if precision > 0:
+        fp = int(round((tp / precision) - tp))
+    else:
+        fp = 0
+
+    fp = max(0, min(fp, total_normals))
+    tn = total_normals - fp
+
+    cm = np.asarray([[tn, fp], [fn, tp]], dtype=int)
+
+    specificity = tn / (tn + fp) if (tn + fp) > 0 else 0.0
+    fpr = fp / (fp + tn) if (fp + tn) > 0 else 0.0
+    fnr = fn / (fn + tp) if (fn + tp) > 0 else 0.0
+    balanced_accuracy = 0.5 * (recall + specificity)
+
+    f2 = (5 * precision * recall / (4 * precision + recall)) if (4 * precision + recall) > 0 else 0.0
+
+    denom = np.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
+    mcc = ((tp * tn - fp * fn) / denom) if denom > 0 else 0.0
+
+    detected_anomalies = tp
+    detection_coverage = detected_anomalies / total_anomalies if total_anomalies > 0 else 0.0
+
+    if detected_anomalies > 0:
+        average_detection_step = float(history_size)
+        average_detection_ratio = 1.0
+        median_detection_ratio = 1.0
+    else:
+        average_detection_step = None
+        average_detection_ratio = None
+        median_detection_ratio = None
+
+    edr_25 = 0.0
+    edr_50 = 0.0
+    edr_75 = 0.0
+
+    alert_rate = (tp + fp) / max(1, total)
+
+    fp_total_cost = float(fp * fp_unit_cost)
+    fn_total_cost = float(fn * fn_unit_cost)
+    delay_total_cost = float(tp * delay_unit_cost)
+    total_cost = fp_total_cost + fn_total_cost + delay_total_cost
+    average_cost_per_sequence = total_cost / max(1, total)
+
+    return {
+        "num_sequences": total,
+        "accuracy": float(accuracy),
+        "balanced_accuracy": float(balanced_accuracy),
+        "precision": float(precision),
+        "recall": float(recall),
+        "specificity_tnr": float(specificity),
+        "f1_score": float(f1),
+        "f2_score": float(f2),
+        "fpr": float(fpr),
+        "fnr": float(fnr),
+        "mcc": float(mcc),
+        "auroc": None,
+        "auprc": None,
+        "tp": int(tp),
+        "tn": int(tn),
+        "fp": int(fp),
+        "fn": int(fn),
+        "confusion_matrix": cm.tolist(),
+        "total_anomalies": int(total_anomalies),
+        "detected_anomalies": int(detected_anomalies),
+        "anomaly_detection_coverage": float(detection_coverage),
+        "average_detection_step": average_detection_step,
+        "average_detection_ratio": average_detection_ratio,
+        "median_detection_ratio": median_detection_ratio,
+        "edr_25": float(edr_25),
+        "edr_50": float(edr_50),
+        "edr_75": float(edr_75),
+        "average_reward": None,
+        "alert_rate": float(alert_rate),
+        "false_positive_unit_cost": float(fp_unit_cost),
+        "false_negative_unit_cost": float(fn_unit_cost),
+        "delay_unit_cost": float(delay_unit_cost),
+        "false_positive_total_cost": float(fp_total_cost),
+        "false_negative_total_cost": float(fn_total_cost),
+        "delay_total_cost": float(delay_total_cost),
+        "total_cost": float(total_cost),
+        "average_cost_per_sequence": float(average_cost_per_sequence),
+    }
+
+
+def format_static_metrics_report(metrics, model_name):
+    auroc_text = "N/A" if metrics["auroc"] is None else f"{metrics['auroc']:.4f}"
+    auprc_text = "N/A" if metrics["auprc"] is None else f"{metrics['auprc']:.4f}"
+    avg_reward_text = "N/A" if metrics["average_reward"] is None else f"{metrics['average_reward']:.4f}"
+    avg_step_text = "N/A" if metrics["average_detection_step"] is None else f"{metrics['average_detection_step']:.4f}"
+    avg_ratio_text = "N/A" if metrics["average_detection_ratio"] is None else f"{metrics['average_detection_ratio']:.4f}"
+    median_ratio_text = "N/A" if metrics["median_detection_ratio"] is None else f"{metrics['median_detection_ratio']:.4f}"
+
+    lines = []
+    lines.append("#" * 80)
+    lines.append(f"{model_name}: FINAL TEST METRICS")
+    lines.append("#" * 80)
+    lines.append(f"Number of sequences   : {metrics['num_sequences']}")
+    lines.append("")
+    lines.append("[Classification Metrics]")
+    lines.append(f"Accuracy              : {metrics['accuracy']:.4f}")
+    lines.append(f"Balanced Accuracy     : {metrics['balanced_accuracy']:.4f}")
+    lines.append(f"Precision             : {metrics['precision']:.4f}")
+    lines.append(f"Recall / TPR          : {metrics['recall']:.4f}")
+    lines.append(f"Specificity / TNR     : {metrics['specificity_tnr']:.4f}")
+    lines.append(f"F1-score              : {metrics['f1_score']:.4f}")
+    lines.append(f"F2-score              : {metrics['f2_score']:.4f}")
+    lines.append(f"FPR                   : {metrics['fpr']:.4f}")
+    lines.append(f"FNR                   : {metrics['fnr']:.4f}")
+    lines.append(f"MCC                   : {metrics['mcc']:.4f}")
+    lines.append(f"AUROC                 : {auroc_text}")
+    lines.append(f"AUPRC                 : {auprc_text}")
+    lines.append("")
+    lines.append("[Confusion Matrix]")
+    lines.append("Labels: 0=normal, 1=anomaly")
+    lines.append(str(np.asarray(metrics["confusion_matrix"])))
+    lines.append(f"TP={metrics['tp']} TN={metrics['tn']} FP={metrics['fp']} FN={metrics['fn']}")
+    lines.append("")
+    lines.append("[Early Detection Metrics]")
+    lines.append("This model is treated as a full-sequence classifier.")
+    lines.append("Default assumption: detected anomalies are detected at the end of the sequence.")
+    lines.append(f"Total anomalies       : {metrics['total_anomalies']}")
+    lines.append(f"Detected anomalies    : {metrics['detected_anomalies']}")
+    lines.append(f"Detection coverage    : {metrics['anomaly_detection_coverage']:.4f}")
+    lines.append(f"Avg detection step    : {avg_step_text}")
+    lines.append(f"Avg detection ratio   : {avg_ratio_text}")
+    lines.append(f"Median detect. ratio  : {median_ratio_text}")
+    lines.append(f"EDR@25%               : {metrics['edr_25']:.4f}")
+    lines.append(f"EDR@50%               : {metrics['edr_50']:.4f}")
+    lines.append(f"EDR@75%               : {metrics['edr_75']:.4f}")
+    lines.append("")
+    lines.append("[RL Metrics]")
+    lines.append(f"Average reward        : {avg_reward_text}")
+    lines.append(f"Alert rate            : {metrics['alert_rate']:.4f}")
+    lines.append("")
+    lines.append("[Cost Metrics]")
+    lines.append(f"FP unit cost          : {metrics['false_positive_unit_cost']:.4f}")
+    lines.append(f"FN unit cost          : {metrics['false_negative_unit_cost']:.4f}")
+    lines.append(f"Delay unit cost       : {metrics['delay_unit_cost']:.4f}")
+    lines.append(f"FP total cost         : {metrics['false_positive_total_cost']:.4f}")
+    lines.append(f"FN total cost         : {metrics['false_negative_total_cost']:.4f}")
+    lines.append(f"Delay total cost      : {metrics['delay_total_cost']:.4f}")
+    lines.append(f"Total cost            : {metrics['total_cost']:.4f}")
+    lines.append(f"Avg cost / sequence   : {metrics['average_cost_per_sequence']:.4f}")
+    lines.append("#" * 80)
+
+    return "\n".join(lines)
+
+
+def save_static_metrics_report(metrics, output_dir, model_name):
+    os.makedirs(output_dir, exist_ok=True)
+
+    safe_model_name = model_name.replace(" ", "_")
+    json_path = os.path.join(output_dir, f"{safe_model_name}_test_metrics.json")
+    txt_path = os.path.join(output_dir, f"{safe_model_name}_test_metrics.txt")
+
+    report = format_static_metrics_report(metrics, model_name)
+
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(metrics, f, indent=2)
+
+    with open(txt_path, "w", encoding="utf-8") as f:
+        f.write(report)
+        f.write("\n")
+
+    print(report)
+    print("Saved metrics JSON:", os.path.abspath(json_path))
+    print("Saved metrics TXT :", os.path.abspath(txt_path))
+
+    return json_path, txt_path
+
+
+def find_project_root():
+    """
+    Find the current project root by looking for the datasets folder.
+    Outputs are saved under:
+        <project_root>/datasets/<dataset>/<model_name>_results/
+    """
+    candidates = []
+    cwd = os.path.abspath(os.getcwd())
+    candidates.append(cwd)
+
+    parent = cwd
+    for _ in range(8):
+        parent = os.path.dirname(parent)
+        candidates.append(parent)
+
+    script_dir = os.path.abspath(os.path.dirname(__file__))
+    candidates.append(script_dir)
+
+    parent = script_dir
+    for _ in range(8):
+        parent = os.path.dirname(parent)
+        candidates.append(parent)
+
+    for cand in candidates:
+        if os.path.isdir(os.path.join(cand, "datasets")):
+            return cand
+
+    return cwd
+
+
+def find_lwadls_data_root():
+    """
+    Find LWADLS/datasets. Preferred structure:
+        ../../LWADLS/datasets
+    You can also pass --data_root in the config/args if your framework supports it.
+    """
+    candidates = [
+        os.path.abspath("../../LWADLS/datasets"),
+        os.path.abspath("../LWADLS/datasets"),
+        os.path.abspath("LWADLS/datasets"),
+        os.path.abspath("/storage/home/roqaya/LWADLS/datasets"),
+    ]
+
+    cwd = os.path.abspath(os.getcwd())
+    parent = cwd
+    for _ in range(6):
+        candidates.append(os.path.join(parent, "LWADLS", "datasets"))
+        parent = os.path.dirname(parent)
+
+    for cand in candidates:
+        if os.path.isdir(cand):
+            return cand
+
+    # Return preferred path even if not found, so missing-file errors are explicit.
+    return os.path.abspath("../../LWADLS/datasets")
 
 # ============================================================
 # Cross-dataset helper functions
@@ -408,27 +713,30 @@ def train_and_eval(args: argparse.Namespace,
 # The original in-domain code path is kept unchanged.
 # ============================================================
 
-DATASET_BASE_DIR = "../LWADLS/datasets"
+DATASET_BASE_DIR = find_lwadls_data_root()
 
 
 def get_dataset_paths(dataset_name, base_dir=DATASET_BASE_DIR):
     """
-    Build train / val / test paths for one dataset.
+    Build train / val / test PKL paths using the LWADLS 3_* structure.
 
-    Expected structure:
-        base_dir / dataset_name / 1_dataset_name_Splitted_Datasets / train_df.pkl
-        base_dir / dataset_name / 1_dataset_name_Splitted_Datasets / val_df.pkl
-        base_dir / dataset_name / 1_dataset_name_Splitted_Datasets / test_df.pkl
+    Example:
+        ../../LWADLS/datasets/SP_150MB_ratio/3_SP_150MB_ratio_Splitted_Datasets/3_SP_150MB_ratio_train_df.pkl
+        ../../LWADLS/datasets/SP_150MB_ratio/3_SP_150MB_ratio_Splitted_Datasets/3_SP_150MB_ratio_val_df.pkl
+        ../../LWADLS/datasets/SP_150MB_ratio/3_SP_150MB_ratio_Splitted_Datasets/3_SP_150MB_ratio_test_df.pkl
     """
-    split_dir = os.path.join(base_dir, dataset_name, f"1_{dataset_name}_Splitted_Datasets")
+    split_dir = os.path.join(
+        base_dir,
+        dataset_name,
+        f"1_{dataset_name}_Splitted_Datasets"
+    )
 
     return {
-        "train": os.path.join(split_dir, "train_df.pkl"),
-        "val": os.path.join(split_dir, "val_df.pkl"),
-        "test": os.path.join(split_dir, "test_df.pkl"),
+        "train": os.path.join(split_dir, f"train_df.pkl"),
+        "val": os.path.join(split_dir, f"val_df.pkl"),
+        "test": os.path.join(split_dir, f"test_df.pkl"),
         "data_dir": os.path.join(base_dir, dataset_name),
     }
-
 
 def fix_label_column_for_cross(df):
     """
@@ -612,14 +920,33 @@ def run(args):
     # For cross-dataset, change CASE and SOURCE_DATASETS only.
     # ============================================================
 
-    #CASE = "in_domain"
-    #TARGET_DATASET = args.dataset_name # come from yml file
-    #==============================
-    CASE = "cross_dataset_with_fraction"
-    TARGET_DATASET = args.dataset_name # come from yml file
-    SOURCE_DATASETS = ["BGL","TH_1G", "SP_150MB_ratio"]          # used only for cross_dataset_with_fraction
-    TARGET_NORMAL_FRACTION = 0.20      # used only for cross_dataset_with_fraction
-    RANDOM_SEED = 42
+    # You can set these in YAML if needed:
+    #   case: in_domain
+    #   source_datasets: ["BGL", "TH_1G", "SP_150MB_ratio"]
+    #   target_normal_fraction: 0.20
+    CASE = getattr(args, "case", "in_domain")
+    TARGET_DATASET = args.dataset_name
+    SOURCE_DATASETS = getattr(args, "source_datasets", ["BGL", "TH_1G", "SP_150MB_ratio"])
+    TARGET_NORMAL_FRACTION = float(getattr(args, "target_normal_fraction", 0.20))
+    RANDOM_SEED = int(getattr(args, "random_seed", 42))
+
+    PROJECT_ROOT = find_project_root()
+    LOCAL_DATASETS_ROOT = os.path.join(PROJECT_ROOT, "datasets")
+    local_dataset_output_root = os.path.join(
+        LOCAL_DATASETS_ROOT,
+        TARGET_DATASET,
+        f"{args.model_name}_results"
+    )
+    os.makedirs(local_dataset_output_root, exist_ok=True)
+
+    print("\n==============================")
+    print("Resolved paths")
+    print("==============================")
+    print("Project root:", PROJECT_ROOT)
+    print("LWADLS data root:", DATASET_BASE_DIR)
+    print("Target dataset:", TARGET_DATASET)
+    print("Local output root:", os.path.abspath(local_dataset_output_root))
+    print("==============================\n")
 
     if CASE == "cross_dataset_with_fraction":
         source_name = "_".join(SOURCE_DATASETS)
@@ -627,9 +954,9 @@ def run(args):
         experiment_name = f"cross_source_{source_name}_target_{TARGET_DATASET}_frac_{fraction_name}"
 
         if args.grouping == "sliding":
-            output_subdir = f"{args.output_dir}/{experiment_name}/{TARGET_DATASET}/sliding/W{args.window_size}_S{args.step_size}_C{args.is_chronological}"
+            output_subdir = os.path.join(local_dataset_output_root, experiment_name, TARGET_DATASET, f"sliding_W{args.window_size}_S{args.step_size}_C{args.is_chronological}")
         else:
-            output_subdir = f"{args.output_dir}/{experiment_name}/{TARGET_DATASET}/session"
+            output_subdir = os.path.join(local_dataset_output_root, experiment_name, TARGET_DATASET, "session")
     else:
         # ============================================================
         # Original in-domain output directory code: unchanged
@@ -639,9 +966,9 @@ def run(args):
         #else:
         #    args.output_dir = f"{args.output_dir}/{args.dataset_name}/session/train{args.train_size}"
         if args.grouping == "sliding":
-            output_subdir = f"{args.output_dir}/{args.dataset_name}/sliding/W{args.window_size}_S{args.step_size}_C{args.is_chronological}"
+            output_subdir = os.path.join(local_dataset_output_root, f"sliding_W{args.window_size}_S{args.step_size}_C{args.is_chronological}")
         else:
-            output_subdir = f"{args.output_dir}/{args.dataset_name}/session"
+            output_subdir = os.path.join(local_dataset_output_root, "session")
 
     os.makedirs(output_subdir, exist_ok=True)
     args.output_dir = output_subdir
@@ -686,28 +1013,40 @@ def run(args):
         #file_path_val = '../LWADLS/datasets/SP_150MB_ratio/1_SP_150MB_ratio_Splitted_Datasets/val_df.pkl'
 
 
-        # Read pickle file
-        df_train = pd.read_pickle(file_path_train)
-        df_test = pd.read_pickle(file_path_test)
-        df_val = pd.read_pickle(file_path_val)
+        paths = get_dataset_paths(TARGET_DATASET, base_dir=DATASET_BASE_DIR)
 
-      #  df_train = df_train.rename(columns={'processed_EventTemplate': 'EventTemplate'})
-      #  df_test = df_test.rename(columns={'processed_EventTemplate': 'EventTemplate'})
-        print(' In run function ......')
+        print("\n==============================")
+        print("In-domain PKL paths")
+        print("==============================")
+        for split_name in ["train", "val", "test"]:
+            print(f"{split_name}: {os.path.abspath(paths[split_name])} | exists={os.path.exists(paths[split_name])}")
+        print("==============================\n")
+
+        missing_paths = [
+            paths[split_name]
+            for split_name in ["train", "val", "test"]
+            if not os.path.exists(paths[split_name])
+        ]
+
+        if missing_paths:
+            raise FileNotFoundError(
+                "Missing required PKL files:\n" + "\n".join(missing_paths)
+            )
+
+        df_train = pd.read_pickle(paths["train"])
+        df_val = pd.read_pickle(paths["val"])
+        df_test = pd.read_pickle(paths["test"])
+
+        df_train = fix_label_column_for_cross(df_train)
+        df_val = fix_label_column_for_cross(df_val)
+        df_test = fix_label_column_for_cross(df_test)
+
+        print("In-domain data loaded")
         df_train.info()
-        df_test.info()
         df_val.info()
-    #    exit()
+        df_test.info()
 
-        df_train = df_train.drop(columns=['Label'])
-        df_test = df_test.drop(columns=['Label'])
-        df_val = df_val.drop(columns=['Label'])
-
-        df_train = df_train.rename(columns={'Original_Label': 'Label'})
-        df_test = df_test.rename(columns={'Original_Label': 'Label'})
-        df_val = df_val.rename(columns={'Original_Label': 'Label'})
-
-        vocab_data_dir = args.data_dir
+        vocab_data_dir = paths["data_dir"]
         vocab_embeddings = args.embeddings
 
     df_train.info()
@@ -765,15 +1104,10 @@ def run(args):
 
 if __name__ == "__main__":
 
-    output_dir = "/storage/home/roqaya/Exper_LOAGAD/output"
-
-    if os.path.isdir(output_dir):
-        for item in os.listdir(output_dir):
-            path = os.path.join(output_dir, item)
-            if os.path.isfile(path) or os.path.islink(path):
-                os.unlink(path)
-            elif os.path.isdir(path):
-                shutil.rmtree(path)
+    # Do not delete previous outputs automatically.
+    # Metrics and model files are saved under:
+    #   datasets/<dataset>/<model_name>_results/
+    output_dir = None
     RESET = colorama.Fore.RESET
 
     # ---------------- Device setup (CPU ONLY) ----------------
