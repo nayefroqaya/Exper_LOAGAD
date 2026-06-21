@@ -1,6 +1,6 @@
 #data_dir: ./dataset/BGL
-data_dir:  ../LWADLS/datasets/HDFS # -------------------Change here
-dataset_name:  HDFS                # -------------------Change here
+data_dir:  ../LWADLS/datasets/BGL # -------------------Change here
+dataset_name:  BGL                # -------------------Change here
 #log_file: .log
 embeddings: embeddings_tfidf.json
 
