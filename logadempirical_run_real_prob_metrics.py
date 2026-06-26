@@ -18,8 +18,21 @@ import pandas as pd
 from random import seed
 
 import torch
+from torch.utils.data import DataLoader
 import yaml
 from sklearn.utils import shuffle
+from sklearn.metrics import (
+    accuracy_score,
+    balanced_accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    fbeta_score,
+    matthews_corrcoef,
+    confusion_matrix,
+    roc_auc_score,
+    average_precision_score,
+)
 from logadempirical.data.data_loader import process_dataset_from_df  #process_dataset
 
 #from logadempirical.data import process_dataset
@@ -380,6 +393,8 @@ def train_and_eval(args: argparse.Namespace,
                               labels=labels, idxs=sequence_idxs, is_unsupervised=is_unsupervised)
     logger.info(f"Test dataset: {len(test_dataset)}")
     start_test_time = time.time()
+    metrics = None
+
     if is_unsupervised:
         logger.info(f"Start predicting {args.model_name} model on {device} device with top-{args.topk} recommendation")
         acc, f1, pre, rec = trainer.predict_unsupervised(test_dataset,
@@ -389,27 +404,64 @@ def train_and_eval(args: argparse.Namespace,
                                                          is_valid=False,
                                                          num_sessions=num_sessions)
     else:
-        start_test_time = time.time()
-        acc, f1, pre, rec = trainer.predict_supervised(test_dataset,
-                                                       session_labels,
-                                                       device=device)
+        # ------------------------------------------------------------
+        # Supervised models: calculate AUROC/AUPRC from REAL model
+        # probabilities instead of reporting N/A.
+        # ------------------------------------------------------------
+        try:
+            y_true, y_pred, y_score = predict_supervised_with_real_probabilities(
+                trainer=trainer,
+                test_dataset=test_dataset,
+                session_labels=session_labels,
+                device=device,
+                batch_size=args.batch_size,
+            )
+
+            metrics = compute_static_metrics_from_predictions(
+                y_true=y_true,
+                y_pred=y_pred,
+                y_score=y_score,
+                history_size=args.history_size,
+                fp_unit_cost=10.0,
+                fn_unit_cost=20.0,
+                delay_unit_cost=5.0,
+            )
+
+            acc = metrics["accuracy"]
+            f1 = metrics["f1_score"]
+            pre = metrics["precision"]
+            rec = metrics["recall"]
+
+        except Exception as e:
+            logger.warning(
+                "Could not extract real probabilities for AUROC/AUPRC. "
+                "Falling back to trainer.predict_supervised() summary metrics. "
+                f"Reason: {e}"
+            )
+            acc, f1, pre, rec = trainer.predict_supervised(test_dataset,
+                                                           session_labels,
+                                                           device=device)
+
     test_time_min = (time.time() - start_test_time) / 60  # in minutes
     logger.info(f"Testing completed in {test_time_min:.2f} minutes")
     logger.info(f"Training completed in {train_time_min:.2f} minutes")
 
     logger.info(f"Test Result:: Acc: {acc:.4f}, Precision: {pre:.4f}, Recall: {rec:.4f}, F1: {f1:.4f}")
 
-    metrics = compute_static_metrics_from_summary(
-        session_labels=session_labels,
-        accuracy=acc,
-        precision=pre,
-        recall=rec,
-        f1=f1,
-        history_size=args.history_size,
-        fp_unit_cost=10.0,
-        fn_unit_cost=20.0,
-        delay_unit_cost=5.0,
-    )
+    # If the model is unsupervised, or if probability extraction failed,
+    # we still save all available metrics. AUROC/AUPRC stay N/A in this fallback.
+    if metrics is None:
+        metrics = compute_static_metrics_from_summary(
+            session_labels=session_labels,
+            accuracy=acc,
+            precision=pre,
+            recall=rec,
+            f1=f1,
+            history_size=args.history_size,
+            fp_unit_cost=10.0,
+            fn_unit_cost=20.0,
+            delay_unit_cost=5.0,
+        )
 
     save_static_metrics_report(
         metrics=metrics,
@@ -444,6 +496,281 @@ def _binary_label_array(labels):
             y.append(0)
     return np.asarray(y, dtype=int)
 
+
+
+
+def predict_supervised_with_real_probabilities(
+    trainer,
+    test_dataset,
+    session_labels,
+    device,
+    batch_size=1024,
+):
+    """
+    Run the trained supervised model on the test set and return real anomaly
+    probabilities for AUROC/AUPRC.
+
+    Returns:
+        y_true  : true labels, 0=normal, 1=anomaly
+        y_pred  : predicted labels, 0=normal, 1=anomaly
+        y_score : real probability/score of anomaly class
+    """
+    model = trainer.model
+    model.eval()
+    model.to(device)
+
+    loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+
+    y_true = _binary_label_array(session_labels)
+    all_scores = []
+    all_preds = []
+
+    def move_to_device(obj):
+        if torch.is_tensor(obj):
+            return obj.to(device)
+        if isinstance(obj, dict):
+            return {k: move_to_device(v) for k, v in obj.items()}
+        if isinstance(obj, (list, tuple)):
+            return type(obj)(move_to_device(v) for v in obj)
+        return obj
+
+    def remove_label_fields(batch_dict):
+        label_keys = {
+            "label", "labels", "Label", "Labels",
+            "y", "target", "targets",
+            "idx", "idxs", "index", "indices",
+        }
+        return {k: v for k, v in batch_dict.items() if k not in label_keys}
+
+    def forward_model(batch):
+        """
+        Supports common LogADEmpirical/PyTorch batch styles:
+        - dict batch: model(batch) or model(**inputs)
+        - tuple/list batch: model(*inputs)
+        - tensor batch: model(batch)
+        """
+        batch = move_to_device(batch)
+
+        if isinstance(batch, dict):
+            inputs_no_labels = remove_label_fields(batch)
+
+            # Many LogADEmpirical models expect one dictionary argument.
+            try:
+                return model(inputs_no_labels)
+            except Exception:
+                pass
+
+            # Some PyTorch models expect keyword inputs.
+            try:
+                return model(**inputs_no_labels)
+            except Exception:
+                pass
+
+            # Last fallback: pass the original batch including labels/idxs.
+            return model(batch)
+
+        if isinstance(batch, (list, tuple)):
+            items = list(batch)
+
+            # If the last item looks like labels/ids, remove it for forward pass.
+            inputs = items
+            if len(items) > 1 and torch.is_tensor(items[-1]) and items[-1].dim() <= 1:
+                inputs = items[:-1]
+
+            try:
+                return model(*inputs)
+            except Exception:
+                if len(inputs) == 1:
+                    return model(inputs[0])
+                return model(inputs)
+
+        return model(batch)
+
+    def extract_logits(output):
+        """Extract logits from tensor, dict, tuple, or list model outputs."""
+        if torch.is_tensor(output):
+            return output
+
+        if isinstance(output, dict):
+            for key in ["logits", "output", "outputs", "scores", "pred", "prediction"]:
+                value = output.get(key)
+                if torch.is_tensor(value):
+                    return value
+
+        if isinstance(output, (list, tuple)):
+            for value in output:
+                if torch.is_tensor(value) and value.dim() >= 2:
+                    return value
+            for value in output:
+                if torch.is_tensor(value):
+                    return value
+
+        raise RuntimeError("Could not extract logits from model output.")
+
+    def logits_to_anomaly_score_and_pred(logits):
+        """
+        Convert logits to anomaly scores and predicted labels.
+        Supports:
+        - [batch, 2] or [batch, n_class] classification logits
+        - [batch, 1] binary logits
+        - [batch] binary logits
+        - [batch, seq_len, n_class] by taking the last time step
+        """
+        if logits.dim() == 3:
+            logits = logits[:, -1, :]
+
+        if logits.dim() == 2 and logits.shape[1] >= 2:
+            probs = torch.softmax(logits, dim=1)
+            score = probs[:, 1]
+            pred = torch.argmax(probs, dim=1)
+            return score, pred
+
+        if logits.dim() == 2 and logits.shape[1] == 1:
+            score = torch.sigmoid(logits[:, 0])
+            pred = (score >= 0.5).long()
+            return score, pred
+
+        if logits.dim() == 1:
+            score = torch.sigmoid(logits)
+            pred = (score >= 0.5).long()
+            return score, pred
+
+        raise RuntimeError(f"Unsupported logits shape for probability extraction: {tuple(logits.shape)}")
+
+    with torch.no_grad():
+        for batch in loader:
+            output = forward_model(batch)
+            logits = extract_logits(output)
+            score, pred = logits_to_anomaly_score_and_pred(logits)
+
+            all_scores.append(score.detach().cpu().numpy())
+            all_preds.append(pred.detach().cpu().numpy())
+
+    y_score = np.concatenate(all_scores, axis=0).astype(float)
+    y_pred = np.concatenate(all_preds, axis=0).astype(int)
+
+    # Safety alignment in case the dataset removes duplicates or changes length.
+    min_len = min(len(y_true), len(y_pred), len(y_score))
+    y_true = y_true[:min_len]
+    y_pred = y_pred[:min_len]
+    y_score = y_score[:min_len]
+
+    return y_true, y_pred, y_score
+
+
+def compute_static_metrics_from_predictions(
+    y_true,
+    y_pred,
+    y_score,
+    history_size=120,
+    fp_unit_cost=10.0,
+    fn_unit_cost=20.0,
+    delay_unit_cost=5.0,
+):
+    """
+    Compute metrics from real model predictions and real anomaly probabilities.
+
+    AUROC and AUPRC are calculated from y_score, not from hard labels.
+    """
+    y_true = np.asarray(y_true, dtype=int)
+    y_pred = np.asarray(y_pred, dtype=int)
+    y_score = np.asarray(y_score, dtype=float)
+
+    total = int(len(y_true))
+
+    cm = confusion_matrix(y_true, y_pred, labels=[0, 1])
+    tn, fp, fn, tp = cm.ravel()
+
+    total_anomalies = int(tp + fn)
+    detected_anomalies = int(tp)
+
+    accuracy = accuracy_score(y_true, y_pred)
+    balanced_accuracy = balanced_accuracy_score(y_true, y_pred)
+    precision = precision_score(y_true, y_pred, zero_division=0)
+    recall = recall_score(y_true, y_pred, zero_division=0)
+    specificity = tn / (tn + fp) if (tn + fp) > 0 else 0.0
+
+    f1 = f1_score(y_true, y_pred, zero_division=0)
+    f2 = fbeta_score(y_true, y_pred, beta=2, zero_division=0)
+    fpr = fp / (fp + tn) if (fp + tn) > 0 else 0.0
+    fnr = fn / (fn + tp) if (fn + tp) > 0 else 0.0
+    mcc = matthews_corrcoef(y_true, y_pred)
+
+    # Real AUROC/AUPRC from anomaly probabilities/scores.
+    if len(np.unique(y_true)) == 2:
+        auroc = roc_auc_score(y_true, y_score)
+        auprc = average_precision_score(y_true, y_score)
+    else:
+        auroc = None
+        auprc = None
+
+    detection_coverage = recall
+
+    if detected_anomalies > 0:
+        average_detection_step = float(history_size)
+        average_detection_ratio = 1.0
+        median_detection_ratio = 1.0
+    else:
+        average_detection_step = 0.0
+        average_detection_ratio = 0.0
+        median_detection_ratio = 0.0
+
+    edr_25 = 0.0
+    edr_50 = 0.0
+    edr_75 = 0.0
+    alert_rate = float(np.mean(y_pred == 1))
+
+    fp_total_cost = float(fp * fp_unit_cost)
+    fn_total_cost = float(fn * fn_unit_cost)
+    delay_total_cost = float(tp * delay_unit_cost)
+    total_cost = fp_total_cost + fn_total_cost + delay_total_cost
+    average_cost_per_sequence = total_cost / max(1, total)
+
+    # Static baselines do not have a true RL environment reward.
+    # This avoids N/A by reporting a cost-based reward approximation.
+    average_reward = -average_cost_per_sequence
+
+    return {
+        "num_sequences": int(total),
+        "accuracy": float(accuracy),
+        "balanced_accuracy": float(balanced_accuracy),
+        "precision": float(precision),
+        "recall": float(recall),
+        "specificity_tnr": float(specificity),
+        "f1_score": float(f1),
+        "f2_score": float(f2),
+        "fpr": float(fpr),
+        "fnr": float(fnr),
+        "mcc": float(mcc),
+        "auroc": None if auroc is None else float(auroc),
+        "auprc": None if auprc is None else float(auprc),
+        "tp": int(tp),
+        "tn": int(tn),
+        "fp": int(fp),
+        "fn": int(fn),
+        "confusion_matrix": cm.tolist(),
+        "total_anomalies": int(total_anomalies),
+        "detected_anomalies": int(detected_anomalies),
+        "anomaly_detection_coverage": float(detection_coverage),
+        "average_detection_step": float(average_detection_step),
+        "average_detection_ratio": float(average_detection_ratio),
+        "median_detection_ratio": float(median_detection_ratio),
+        "edr_25": float(edr_25),
+        "edr_50": float(edr_50),
+        "edr_75": float(edr_75),
+        "average_reward": float(average_reward),
+        "alert_rate": float(alert_rate),
+        "false_positive_unit_cost": float(fp_unit_cost),
+        "false_negative_unit_cost": float(fn_unit_cost),
+        "delay_unit_cost": float(delay_unit_cost),
+        "false_positive_total_cost": float(fp_total_cost),
+        "false_negative_total_cost": float(fn_total_cost),
+        "delay_total_cost": float(delay_total_cost),
+        "total_cost": float(total_cost),
+        "average_cost_per_sequence": float(average_cost_per_sequence),
+        "auroc_auprc_source": "real_model_probability_or_score",
+        "average_reward_source": "negative_average_cost_per_sequence_static_approximation",
+    }
 
 def compute_static_metrics_from_summary(
     session_labels,
@@ -523,6 +850,10 @@ def compute_static_metrics_from_summary(
     total_cost = fp_total_cost + fn_total_cost + delay_total_cost
     average_cost_per_sequence = total_cost / max(1, total)
 
+    # Static baselines do not have a true RL environment reward.
+    # This is a cost-based approximation so the report does not show N/A.
+    average_reward = -average_cost_per_sequence
+
     return {
         "num_sequences": total,
         "accuracy": float(accuracy),
@@ -551,7 +882,7 @@ def compute_static_metrics_from_summary(
         "edr_25": float(edr_25),
         "edr_50": float(edr_50),
         "edr_75": float(edr_75),
-        "average_reward": None,
+        "average_reward": float(average_reward),
         "alert_rate": float(alert_rate),
         "false_positive_unit_cost": float(fp_unit_cost),
         "false_negative_unit_cost": float(fn_unit_cost),
@@ -561,6 +892,8 @@ def compute_static_metrics_from_summary(
         "delay_total_cost": float(delay_total_cost),
         "total_cost": float(total_cost),
         "average_cost_per_sequence": float(average_cost_per_sequence),
+        "auroc_auprc_source": "not_available_no_real_model_probability",
+        "average_reward_source": "negative_average_cost_per_sequence_static_approximation",
     }
 
 
@@ -591,6 +924,7 @@ def format_static_metrics_report(metrics, model_name):
     lines.append(f"MCC                   : {metrics['mcc']:.4f}")
     lines.append(f"AUROC                 : {auroc_text}")
     lines.append(f"AUPRC                 : {auprc_text}")
+    lines.append(f"AUROC/AUPRC source    : {metrics.get('auroc_auprc_source', 'unknown')}")
     lines.append("")
     lines.append("[Confusion Matrix]")
     lines.append("Labels: 0=normal, 1=anomaly")
@@ -612,6 +946,7 @@ def format_static_metrics_report(metrics, model_name):
     lines.append("")
     lines.append("[RL Metrics]")
     lines.append(f"Average reward        : {avg_reward_text}")
+    lines.append(f"AvgReward source      : {metrics.get('average_reward_source', 'unknown')}")
     lines.append(f"Alert rate            : {metrics['alert_rate']:.4f}")
     lines.append("")
     lines.append("[Cost Metrics]")
