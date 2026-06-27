@@ -32,6 +32,7 @@ from sklearn.metrics import (
     confusion_matrix,
     roc_auc_score,
     average_precision_score,
+    classification_report,
 )
 from logadempirical.data.data_loader import process_dataset_from_df  #process_dataset
 
@@ -499,6 +500,24 @@ def _binary_label_array(labels):
 
 
 
+
+def _classification_report_from_confusion(metrics):
+    """Build class-0/class-1 classification report from the stored confusion matrix."""
+    cm = np.asarray(metrics["confusion_matrix"], dtype=int)
+    tn, fp, fn, tp = cm.ravel()
+
+    y_true = np.asarray([0] * tn + [0] * fp + [1] * fn + [1] * tp, dtype=int)
+    y_pred = np.asarray([0] * tn + [1] * fp + [0] * fn + [1] * tp, dtype=int)
+
+    return classification_report(
+        y_true,
+        y_pred,
+        labels=[0, 1],
+        target_names=["Normal (0)", "Anomaly (1)"],
+        digits=4,
+        zero_division=0,
+    )
+
 def predict_supervised_with_real_probabilities(
     trainer,
     test_dataset,
@@ -768,6 +787,14 @@ def compute_static_metrics_from_predictions(
         "delay_total_cost": float(delay_total_cost),
         "total_cost": float(total_cost),
         "average_cost_per_sequence": float(average_cost_per_sequence),
+        "classification_report_text": classification_report(
+            y_true,
+            y_pred,
+            labels=[0, 1],
+            target_names=["Normal (0)", "Anomaly (1)"],
+            digits=4,
+            zero_division=0,
+        ),
         "auroc_auprc_source": "real_model_probability_or_score",
         "average_reward_source": "negative_average_cost_per_sequence_static_approximation",
     }
@@ -892,75 +919,83 @@ def compute_static_metrics_from_summary(
         "delay_total_cost": float(delay_total_cost),
         "total_cost": float(total_cost),
         "average_cost_per_sequence": float(average_cost_per_sequence),
+        "classification_report_text": classification_report(
+            np.asarray([0] * tn + [0] * fp + [1] * fn + [1] * tp, dtype=int),
+            np.asarray([0] * tn + [1] * fp + [0] * fn + [1] * tp, dtype=int),
+            labels=[0, 1],
+            target_names=["Normal (0)", "Anomaly (1)"],
+            digits=4,
+            zero_division=0,
+        ),
         "auroc_auprc_source": "not_available_no_real_model_probability",
         "average_reward_source": "negative_average_cost_per_sequence_static_approximation",
     }
 
 
 def format_static_metrics_report(metrics, model_name):
-    auroc_text = "N/A" if metrics["auroc"] is None else f"{metrics['auroc']:.4f}"
-    auprc_text = "N/A" if metrics["auprc"] is None else f"{metrics['auprc']:.4f}"
-    avg_reward_text = "N/A" if metrics["average_reward"] is None else f"{metrics['average_reward']:.4f}"
+    """
+    Compact selected-metrics report:
+      - Precision, Recall, F1 for anomaly class
+      - Classification report for class 0 and class 1
+      - Confusion matrix
+      - Early detection: coverage, avg step, avg ratio, EDR@25/50/75
+      - Cost-sensitive: FP cost, FN cost, delay cost
+    """
     avg_step_text = "N/A" if metrics["average_detection_step"] is None else f"{metrics['average_detection_step']:.4f}"
     avg_ratio_text = "N/A" if metrics["average_detection_ratio"] is None else f"{metrics['average_detection_ratio']:.4f}"
-    median_ratio_text = "N/A" if metrics["median_detection_ratio"] is None else f"{metrics['median_detection_ratio']:.4f}"
+
+    class_report_text = metrics.get("classification_report_text")
+    if class_report_text is None:
+        class_report_text = _classification_report_from_confusion(metrics)
 
     lines = []
     lines.append("#" * 80)
-    lines.append(f"{model_name}: FINAL TEST METRICS")
+    lines.append(f"{model_name}: SELECTED TEST METRICS")
     lines.append("#" * 80)
     lines.append(f"Number of sequences   : {metrics['num_sequences']}")
     lines.append("")
-    lines.append("[Classification Metrics]")
-    lines.append(f"Accuracy              : {metrics['accuracy']:.4f}")
-    lines.append(f"Balanced Accuracy     : {metrics['balanced_accuracy']:.4f}")
+
+    lines.append("[Classification Metrics - Anomaly Class]")
+    lines.append("Positive class        : 1 = anomaly")
     lines.append(f"Precision             : {metrics['precision']:.4f}")
     lines.append(f"Recall / TPR          : {metrics['recall']:.4f}")
-    lines.append(f"Specificity / TNR     : {metrics['specificity_tnr']:.4f}")
     lines.append(f"F1-score              : {metrics['f1_score']:.4f}")
-    lines.append(f"F2-score              : {metrics['f2_score']:.4f}")
-    lines.append(f"FPR                   : {metrics['fpr']:.4f}")
-    lines.append(f"FNR                   : {metrics['fnr']:.4f}")
-    lines.append(f"MCC                   : {metrics['mcc']:.4f}")
-    lines.append(f"AUROC                 : {auroc_text}")
-    lines.append(f"AUPRC                 : {auprc_text}")
-    lines.append(f"AUROC/AUPRC source    : {metrics.get('auroc_auprc_source', 'unknown')}")
     lines.append("")
+
+    lines.append("[Classification Report - Class 0 and Class 1]")
+    lines.append("Class 0               : Normal")
+    lines.append("Class 1               : Anomaly")
+    lines.append("")
+    lines.append(class_report_text.rstrip())
+    lines.append("")
+
     lines.append("[Confusion Matrix]")
     lines.append("Labels: 0=normal, 1=anomaly")
     lines.append(str(np.asarray(metrics["confusion_matrix"])))
     lines.append(f"TP={metrics['tp']} TN={metrics['tn']} FP={metrics['fp']} FN={metrics['fn']}")
     lines.append("")
+
     lines.append("[Early Detection Metrics]")
-    lines.append("This model is treated as a full-sequence classifier.")
+    lines.append("This model is treated as a static full-sequence classifier.")
     lines.append("Default assumption: detected anomalies are detected at the end of the sequence.")
     lines.append(f"Total anomalies       : {metrics['total_anomalies']}")
     lines.append(f"Detected anomalies    : {metrics['detected_anomalies']}")
     lines.append(f"Detection coverage    : {metrics['anomaly_detection_coverage']:.4f}")
     lines.append(f"Avg detection step    : {avg_step_text}")
     lines.append(f"Avg detection ratio   : {avg_ratio_text}")
-    lines.append(f"Median detect. ratio  : {median_ratio_text}")
-    lines.append(f"EDR@25%               : {metrics['edr_25']:.4f}")
-    lines.append(f"EDR@50%               : {metrics['edr_50']:.4f}")
-    lines.append(f"EDR@75%               : {metrics['edr_75']:.4f}")
+    lines.append(f"EDR@25                : {metrics['edr_25']:.4f}")
+    lines.append(f"EDR@50                : {metrics['edr_50']:.4f}")
+    lines.append(f"EDR@75                : {metrics['edr_75']:.4f}")
     lines.append("")
-    lines.append("[RL Metrics]")
-    lines.append(f"Average reward        : {avg_reward_text}")
-    lines.append(f"AvgReward source      : {metrics.get('average_reward_source', 'unknown')}")
-    lines.append(f"Alert rate            : {metrics['alert_rate']:.4f}")
-    lines.append("")
-    lines.append("[Cost Metrics]")
-    lines.append(f"FP unit cost          : {metrics['false_positive_unit_cost']:.4f}")
-    lines.append(f"FN unit cost          : {metrics['false_negative_unit_cost']:.4f}")
-    lines.append(f"Delay unit cost       : {metrics['delay_unit_cost']:.4f}")
-    lines.append(f"FP total cost         : {metrics['false_positive_total_cost']:.4f}")
-    lines.append(f"FN total cost         : {metrics['false_negative_total_cost']:.4f}")
-    lines.append(f"Delay total cost      : {metrics['delay_total_cost']:.4f}")
-    lines.append(f"Total cost            : {metrics['total_cost']:.4f}")
-    lines.append(f"Avg cost / sequence   : {metrics['average_cost_per_sequence']:.4f}")
+
+    lines.append("[Cost-Sensitive Metrics]")
+    lines.append(f"False-positive cost   : {metrics['false_positive_total_cost']:.4f}")
+    lines.append(f"False-negative cost   : {metrics['false_negative_total_cost']:.4f}")
+    lines.append(f"Delay cost            : {metrics['delay_total_cost']:.4f}")
     lines.append("#" * 80)
 
     return "\n".join(lines)
+
 
 
 def save_static_metrics_report(metrics, output_dir, model_name):
@@ -968,7 +1003,19 @@ def save_static_metrics_report(metrics, output_dir, model_name):
 
     safe_model_name = model_name.replace(" ", "_")
     json_path = os.path.join(output_dir, f"{safe_model_name}_test_metrics.json")
-    txt_path = os.path.join(output_dir, f"{safe_model_name}_test_metrics.txt")
+
+    # Save TXT directly in datasets/<dataset_name>/ for easier collection.
+    # output_dir is usually:
+    #   <project_root>/datasets/<dataset>/<model_name>_results/<subfolder>
+    dataset_dir = output_dir
+    parts = os.path.normpath(output_dir).split(os.sep)
+    if "datasets" in parts:
+        idx = parts.index("datasets")
+        if idx + 1 < len(parts):
+            dataset_dir = os.sep.join(parts[:idx + 2])
+
+    os.makedirs(dataset_dir, exist_ok=True)
+    txt_path = os.path.join(dataset_dir, f"{safe_model_name}_test_metrics.txt")
 
     report = format_static_metrics_report(metrics, model_name)
 
