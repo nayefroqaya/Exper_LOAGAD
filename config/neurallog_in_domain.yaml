@@ -5,9 +5,9 @@
 dataset_base_dir: ../LWADLS/datasets
 
 # Target dataset
-dataset_name: HDFS
-target_dataset: HDFS
-data_dir: ../LWADLS/datasets/HDFS
+dataset_name: SP_150MB_ratio
+target_dataset: SP_150MB_ratio
+data_dir: ../LWADLS/datasets/SP_150MB_ratio
 
 embeddings: embeddings_tfidf.json
 
