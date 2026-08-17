@@ -1,0 +1,66 @@
+# ============================================================
+# NeuralLog experiment configuration
+# ============================================================
+
+dataset_base_dir: ../LWADLS/datasets
+
+# Target dataset
+dataset_name: HDFS
+target_dataset: HDFS
+data_dir: ../LWADLS/datasets/HDFS
+
+embeddings: embeddings_tfidf.json
+
+# Data preprocessing
+grouping: session
+session_level: entry
+sequential: false
+semantic: true
+quantitative: false
+
+# Model configuration
+model_name: NeuralLog
+embedding_dim: 300
+dropout: 0.1
+dim_feedforward: 2048
+num_heads: 4
+num_layers: 2
+n_class: 2
+
+# Optimizer configuration
+optimizer: adam
+adam_beta1: 0.9
+adam_beta2: 0.999
+epsilon: 1.0e-08
+lr: 0.001
+optim_momentum: 0.99
+scheduler: linear
+warmup_rate: 0.1
+weight_decay: 0.0
+
+# Training configuration
+accumulation_step: 2
+batch_size: 512
+max_epoch: 10
+
+# Common configuration
+output_dir: ./output/
+resume: false
+train: true
+
+random_seed: 42
+
+# CASE 3: CROSS-DOMAIN + 20% TARGET NORMAL + ANOMALY
+# train = source train + exactly 20% of the whole target-train size,
+#         sampled stratified from both target classes
+# val   = target validation
+# test  = target test untouched
+experiment_case: cross_normal_anomaly
+
+source_datasets:
+  - BGL
+ # - TH_1G
+ # - SP_150MB_ratio
+
+# Normal + anomaly fraction
+target_fraction: 0.20
