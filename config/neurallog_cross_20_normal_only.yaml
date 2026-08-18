@@ -11,8 +11,8 @@ data_dir: ../LWADLS/datasets/TH_1G
 
 embeddings: embeddings_tfidf.json
 
-# Data preprocessing
-grouping: session
+# Data preprocessing : sliding or session
+grouping: sliding
 session_level: entry
 sequential: false
 semantic: true
