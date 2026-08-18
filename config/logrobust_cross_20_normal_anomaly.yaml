@@ -1,0 +1,74 @@
+# ============================================================
+# LogRobust configuration
+# Target used in this example: TH_1G
+# For BGL/TH/Spirit targets use grouping: sliding.
+# For HDFS target use grouping: session.
+# ============================================================
+
+dataset_base_dir: ../LWADLS/datasets
+
+# TARGET DATASET
+dataset_name: TH_1G
+target_dataset: TH_1G
+data_dir: ../LWADLS/datasets/TH_1G
+
+embeddings: embeddings_tfidf.json
+
+# data preprocessing
+grouping: sliding
+session_level: entry
+sequential: true
+semantic: true
+quantitative: false
+
+# fixed-window construction for sliding datasets
+window_size: 120
+step_size: 120
+
+# sequence length used by the model
+history_size: 120
+
+# model configuration
+model_name: LogRobust
+embedding_dim: 300
+dropout: 0.2
+hidden_size: 128
+num_layers: 2
+n_class: 2
+
+# optimizer configuration
+optimizer: adamw
+adam_beta1: 0.9
+adam_beta2: 0.999
+epsilon: 1.0e-08
+lr: 0.001
+optim_momentum: 0.99
+scheduler: polynomial
+warmup_rate: 0.1
+weight_decay: 0.0001
+
+# training configuration
+accumulation_step: 1
+batch_size: 1024
+max_epoch: 10
+
+# common configuration
+output_dir: ./output/
+resume: false
+train: true
+
+random_seed: 42
+
+# ============================================================
+# CASE 2: CROSS-DOMAIN
+# 20% of WHOLE target training set, containing NORMAL + ANOMALY
+# while preserving the target normal/anomaly ratio.
+# ============================================================
+experiment_case: cross_normal_anomaly
+
+source_datasets:
+  - BGL
+  - SP_150MB_ratio
+  - HDFS
+
+target_fraction: 0.20
