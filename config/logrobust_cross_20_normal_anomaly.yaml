@@ -8,14 +8,14 @@
 dataset_base_dir: ../LWADLS/datasets
 
 # TARGET DATASET
-dataset_name: HDFS
-target_dataset: HDFS
+dataset_name: TH_1G
+target_dataset: TH_1G
 #data_dir: ../LWADLS/datasets/TH_1G
 
 embeddings: embeddings_tfidf.json
 
 # data preprocessing
-grouping: session
+grouping: sliding
 session_level: entry
 sequential: true
 semantic: true
@@ -69,6 +69,6 @@ experiment_case: cross_normal_anomaly
 source_datasets:
   - BGL
  # - SP_150MB_ratio
- # - HDFS
+  - HDFS
 
 target_fraction: 0.20
