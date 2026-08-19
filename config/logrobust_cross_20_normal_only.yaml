@@ -8,9 +8,9 @@
 dataset_base_dir: ../LWADLS/datasets
 
 # TARGET DATASET
-dataset_name: SP_150MB_ratio
-target_dataset: SP_150MB_ratio
-data_dir: ../LWADLS/datasets/SP_150MB_ratio
+dataset_name: TH_1G
+target_dataset: TH_1G
+#data_dir: ../LWADLS/datasets/TH_1G
 
 embeddings: embeddings_tfidf.json
 
@@ -67,8 +67,8 @@ random_seed: 42
 experiment_case: cross_normal_only
 
 source_datasets:
-  - TH_1G
+  - BGL
   #- SP_150MB_ratio
-  #- HDFS
+  - HDFS
 
 target_fraction: 0.20
