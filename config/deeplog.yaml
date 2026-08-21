@@ -6,7 +6,7 @@ dataset_name:  HDFS     # -------------------Change here
 embeddings: embeddings_tfidf.json
 
 # data preprocessing
-grouping:  session # sliding  # sliding #session . # -------------------Change here for HDFS session
+grouping:  session  # sliding  # sliding #session . # -------------------Change here for HDFS session
 session_level: entry
 sequential: true
 semantic: false
