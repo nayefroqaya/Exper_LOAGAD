@@ -9,12 +9,12 @@ dataset_base_dir: ../LWADLS/datasets
 # TARGET DATASET
 # The Python code automatically derives:
 # ../LWADLS/datasets/<target_dataset>/1_<target_dataset>_Splitted_Datasets/
-target_dataset: HDFS
+target_dataset: SP_150MB_ratio
 
 # SOURCE DATASETS
 # Do not include the target dataset here.
 source_datasets:
-  - BGL
+  - TH_1G
  # - TH_1G
  # - HDFS
 
@@ -26,7 +26,7 @@ embeddings: embeddings_tfidf.json
 # data preprocessing
 # BGL / Thunderbird / Spirit -> sliding
 # HDFS -> session
-grouping: session
+grouping: sliding
 session_level: entry
 sequential: true
 quantitative: true
