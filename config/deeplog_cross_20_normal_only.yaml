@@ -6,7 +6,7 @@
 dataset_base_dir: ../LWADLS/datasets
 
 # TARGET DATASET
-target_dataset: HDFS
+target_dataset: SP_150MB_ratio
 
 # SOURCE DATASETS
 # Do not include the target dataset here.
@@ -23,7 +23,7 @@ embeddings: embeddings_tfidf.json
 # data preprocessing
 # Use sliding for BGL / Thunderbird / Spirit.
 # Use session when HDFS is the TARGET.
-grouping: session
+grouping: sliding
 session_level: entry
 sequential: true
 semantic: false
