@@ -1,0 +1,65 @@
+# ============================================================
+# DeepLog cross-domain configuration
+# ============================================================
+
+# Root containing all datasets
+dataset_base_dir: ../LWADLS/datasets
+
+# TARGET DATASET
+target_dataset: SP_150MB_ratio
+
+# SOURCE DATASETS
+# Do not include the target dataset here.
+source_datasets:
+  - BGL
+  - TH_1G
+  - HDFS
+
+target_fraction: 0.20
+random_seed: 42
+
+embeddings: embeddings_tfidf.json
+
+# data preprocessing
+# Use sliding for BGL / Thunderbird / Spirit.
+# Use session when HDFS is the TARGET.
+grouping: sliding
+session_level: entry
+sequential: true
+semantic: false
+quantitative: false
+
+window_size: 120
+step_size: 120
+
+# model configuration
+model_name: DeepLog
+embedding_dim: 300
+dropout: 0.1
+hidden_size: 128
+num_layers: 2
+topk: 9
+
+# optimizer configuration
+optimizer: adam
+adam_beta1: 0.9
+adam_beta2: 0.999
+
+# training configuration
+max_epoch: 20
+
+# common configuration
+output_dir: ./output/
+resume: false
+train: true
+remove_duplicates: true
+
+# ============================================================
+# CASE 2: CROSS-DOMAIN + 20% TARGET NORMAL + ANOMALY
+# Select 20% of the WHOLE target-training set.
+# The selected subset contains both normal and anomaly rows
+# while preserving the target normal/anomaly ratio.
+#
+# DeepLog itself remains on the unsupervised code path.
+# ============================================================
+experiment_case: cross_normal_anomaly
