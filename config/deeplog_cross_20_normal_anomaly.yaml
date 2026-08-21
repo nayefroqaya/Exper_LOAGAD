@@ -11,9 +11,9 @@ target_dataset: SP_150MB_ratio
 # SOURCE DATASETS
 # Do not include the target dataset here.
 source_datasets:
-  #- BGL
+  - BGL
   - TH_1G
-  #- HDFS
+  - HDFS
 
 target_fraction: 0.20
 random_seed: 42
