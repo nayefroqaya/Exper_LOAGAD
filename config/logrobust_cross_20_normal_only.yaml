@@ -67,8 +67,8 @@ random_seed: 42
 experiment_case: cross_normal_only
 
 source_datasets:
-  - SP_150MB_ratio
+  #- SP_150MB_ratio
   - BGL
-  - HDFS
+  #- HDFS
 
 target_fraction: 0.20
