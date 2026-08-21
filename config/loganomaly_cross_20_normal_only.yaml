@@ -1,0 +1,73 @@
+# ============================================================
+# LogAnomaly cross-domain configuration
+# Change only target_dataset / source_datasets as needed.
+# ============================================================
+
+# Root folder containing all datasets
+dataset_base_dir: ../LWADLS/datasets
+
+# TARGET DATASET
+# The Python code automatically derives:
+# ../LWADLS/datasets/<target_dataset>/1_<target_dataset>_Splitted_Datasets/
+target_dataset: SP_150MB_ratio
+
+# SOURCE DATASETS
+# Do not include the target dataset here.
+source_datasets:
+  - BGL
+  - TH_1G
+  - HDFS
+
+target_fraction: 0.20
+random_seed: 42
+
+embeddings: embeddings_tfidf.json
+
+# data preprocessing
+# BGL / Thunderbird / Spirit -> sliding
+# HDFS -> session
+grouping: sliding
+session_level: entry
+sequential: true
+quantitative: true
+semantic: false
+
+window_size: 120
+step_size: 120
+
+# model configuration
+model_name: LogAnomaly
+embedding_dim: 300
+dropout: 0.1
+hidden_size: 128
+num_layers: 2
+topk: 9
+
+# optimizer configuration
+optimizer: adam
+adam_beta1: 0.9
+adam_beta2: 0.999
+epsilon: 1.0e-08
+lr: 0.001
+optim_momentum: 0.99
+scheduler: linear
+warmup_rate: 0.1
+weight_decay: 0.0
+
+# training configuration
+accumulation_step: 2
+batch_size: 64
+max_epoch: 20
+
+# common configuration
+output_dir: ./output/
+resume: false
+train: true
+
+# ============================================================
+# CASE 1: CROSS DOMAIN + 20% TARGET NORMAL ONLY
+#
+# Target budget = 20% of the WHOLE target-training size.
+# Every selected target row must be NORMAL.
+# ============================================================
+experiment_case: cross_normal_only
