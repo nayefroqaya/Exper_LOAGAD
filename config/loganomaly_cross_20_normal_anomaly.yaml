@@ -9,12 +9,12 @@ dataset_base_dir: ../LWADLS/datasets
 # TARGET DATASET
 # The Python code automatically derives:
 # ../LWADLS/datasets/<target_dataset>/1_<target_dataset>_Splitted_Datasets/
-target_dataset: TH_1G
+target_dataset: BGL
 
 # SOURCE DATASETS
 # Do not include the target dataset here.
 source_datasets:
-  - BGL
+  - TH_1G
   - SP_150MB_ratio
   - HDFS
 
