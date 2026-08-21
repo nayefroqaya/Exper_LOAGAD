@@ -26,7 +26,7 @@ embeddings: embeddings_tfidf.json
 # data preprocessing
 # BGL / Thunderbird / Spirit -> sliding
 # HDFS -> session
-grouping: sliding
+grouping: session
 session_level: entry
 sequential: true
 quantitative: true
