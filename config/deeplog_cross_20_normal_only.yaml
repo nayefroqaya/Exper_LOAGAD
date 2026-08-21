@@ -6,13 +6,13 @@
 dataset_base_dir: ../LWADLS/datasets
 
 # TARGET DATASET
-target_dataset: TH_1G
+target_dataset: BGL
 
 # SOURCE DATASETS
 # Do not include the target dataset here.
 source_datasets:
-  - BGL
- # - SP_150MB_ratio
+  #- BGL
+  - TH_1G
   - HDFS
 
 target_fraction: 0.20
