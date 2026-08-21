@@ -769,7 +769,7 @@ def run(args):
     #   cross_normal_only
     #   cross_normal_anomaly
     # ============================================================
-    experiment_case = getattr(args, "experiment_case", "in_domain")
+    experiment_case = getattr(args, "experiment_case", "cross_normal_only")
     target_dataset = getattr(args, "target_dataset", args.dataset_name)
     source_datasets = getattr(args, "source_datasets", [])
     target_fraction = float(getattr(args, "target_fraction", 0.20))
