@@ -14,7 +14,7 @@ target_dataset: TH_1G
 # SOURCE DATASETS
 # Do not include the target dataset here.
 source_datasets:
-  - SP_150MB_ratio
+ # - SP_150MB_ratio
   - BGL
   - HDFS
 
