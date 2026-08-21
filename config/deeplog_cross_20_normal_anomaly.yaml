@@ -6,7 +6,7 @@
 dataset_base_dir: ../LWADLS/datasets
 
 # TARGET DATASET
-target_dataset: TH_1G
+target_dataset: HDFS
 
 # SOURCE DATASETS
 # Do not include the target dataset here.
