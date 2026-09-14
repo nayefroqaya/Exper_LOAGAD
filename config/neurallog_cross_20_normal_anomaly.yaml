@@ -5,8 +5,8 @@
 dataset_base_dir: ../LWADLS/datasets
 
 # Target dataset
-dataset_name: BGL
-target_dataset: BGL
+dataset_name: TH_1G
+target_dataset: TH_1G
 #data_dir: ../LWADLS/datasets/TH_1G
 
 embeddings: embeddings_tfidf.json
