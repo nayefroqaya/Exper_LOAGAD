@@ -12,7 +12,7 @@ data_dir: ../LWADLS/datasets/SP_150MB_ratio
 embeddings: embeddings_tfidf.json
 
 # Data preprocessing
-grouping: session
+grouping: sliding
 session_level: entry
 sequential: false
 semantic: true
