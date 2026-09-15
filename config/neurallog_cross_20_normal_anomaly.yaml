@@ -5,8 +5,8 @@
 dataset_base_dir: ../LWADLS/datasets
 
 # Target dataset
-dataset_name: TH_1G
-target_dataset: TH_1G
+dataset_name: BGL
+target_dataset: BGL
 #data_dir: ../LWADLS/datasets/TH_1G
 
 embeddings: embeddings_tfidf.json
@@ -61,7 +61,7 @@ source_datasets:
  # - SP_150MB_ratio
   - HDFS
  # - BGL
-  - BGL
+  - TH_1G
 
 # Normal + anomaly fraction
 target_fraction: 0.20
