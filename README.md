@@ -129,10 +129,9 @@ If you find the code and models useful for your research, please cite the follow
 With assumption you run the log parser in proposed paper code, our PKL files are ready.
 Set the path to data folder. default='../../root folder/datasets'.
 
-# generate embeddings for log templates
+### generate embeddings for log templates
 $ python generate_embeddings.py <dataset> <strategy>
-# where <dataset> is one of {HDFS, BGL, Thunderbird, or Spirit}
-# and <strategy> is one of {average or tfidf}
+where <dataset> is one of {HDFS, BGL, Thunderbird, or Spirit} and <strategy> is one of {average or tfidf}
 
 We have three run for each method: 
 
@@ -141,7 +140,7 @@ We have three run for each method:
 - In domain. 
 From yml file, we can decide source_datasets and Target dataset.
 
-## DeepLog : 
+### DeepLog : 
  - Cross domain (20% Normal data + 20% Anomaly data ) : 
 python main_run.py --config_file config/deeplog_cross_20_normal_anomaly.yml
  - Cross domain (20% Normal data ):
@@ -150,7 +149,7 @@ python main_run.py --config_file config/deeplog_cross_20_normal_only.yml
 python main_run.py --config_file config/deeplog.yml
 
 
-## LogAnomaly : 
+### LogAnomaly : 
  - Cross domain (20% Normal data + 20% Anomaly data ) : 
 python main_run.py --config_file config/loganomaly_cross_20_normal_anomaly.yml
  - Cross domain (20% Normal data ):
@@ -158,7 +157,7 @@ python main_run.py --config_file config/loganomaly_cross_20_normal_only.yml
  - In domain : 
 python main_run.py --config_file config/loganomaly.yml
 
-## Logrobust : 
+### Logrobust : 
  - Cross domain (20% Normal data + 20% Anomaly data ) : 
 python main_run.py --config_file config/logrobust_cross_20_normal_anomaly.yml
  - Cross domain (20% Normal data ):
@@ -167,7 +166,7 @@ python main_run.py --config_file config/logrobust_cross_20_normal_only.yml
 python main_run.py --config_file config/Logrobust.yml
 
 
-## NeuralLog : 
+### NeuralLog : 
  - Cross domain (20% Normal data + 20% Anomaly data ) : 
 python main_run.py --config_file config/neurallog_cross_20_normal_anomaly.yml
  - Cross domain (20% Normal data ):
