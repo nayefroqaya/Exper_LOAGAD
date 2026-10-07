@@ -125,9 +125,9 @@ If you find the code and models useful for your research, please cite the follow
 }
 ```
 
-### Re-implementation : 
+### Re-implementation and Run the base line : 
 With assumption you run the log parser in proposed paper code, our PKL files are ready.
-Set the path to data folder. default='../../LWADLS/datasets'.
+Set the path to data folder. default='../../root folder/datasets'.
 
 # generate embeddings for log templates
 $ python generate_embeddings.py <dataset> <strategy>
