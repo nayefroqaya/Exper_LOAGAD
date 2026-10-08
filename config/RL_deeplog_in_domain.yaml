@@ -4,8 +4,8 @@
 # ============================================================
 
 # dataset configuration
-data_dir: ../LWADLS/datasets/BGL
-dataset_name: BGL
+data_dir: ../LWADLS/datasets/TH_1G
+dataset_name: TH_1G
 embeddings: embeddings_tfidf.json
 
 # data preprocessing
