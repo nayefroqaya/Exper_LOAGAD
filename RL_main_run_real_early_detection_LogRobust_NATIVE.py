@@ -385,7 +385,7 @@ def compute_real_early_detection_metrics(
       - use the existing unsupervised next-event prediction path.
 
     LogRobust:
-      - use the existing supervised prediction path on padded prefixes.
+      - use the existing supervised prediction path only on complete native windows.
 
     For every anomalous test sequence, record the first prefix that the
     trained baseline predicts as anomalous. No retraining is performed.
@@ -407,7 +407,10 @@ def compute_real_early_detection_metrics(
     print("=" * 60)
     print("Model               :", args.model_name)
     print("Prefix stride        :", stride)
-    print("Method               : first prefix flagged anomalous")
+    if args.model_name == "LogRobust":
+        print("Method               : first COMPLETE native window flagged anomalous")
+    else:
+        print("Method               : first prefix flagged anomalous")
     if args.model_name == "LogRobust":
         print("Prediction mode       : supervised LogRobust")
     else:
@@ -430,9 +433,14 @@ def compute_real_early_detection_metrics(
             continue
 
         if args.model_name == "LogRobust":
-            # Supervised LogRobust can evaluate a short prefix because
-            # sliding_window() pads it to history_size.
-            first_evaluable = 1
+            # IMPORTANT:
+            # Evaluate LogRobust only when a COMPLETE native input window exists.
+            # Do not create artificial early decisions by padding 1..119-event prefixes.
+            # Therefore, with history_size=120 and a 120-event sequence,
+            # the first valid LogRobust decision is at event 120.
+            first_evaluable = int(getattr(args, "history_size", 120))
+            if seq_len < first_evaluable:
+                continue
         else:
             # DeepLog/LogAnomaly need history_size context events plus
             # one next event for next-event prediction.
