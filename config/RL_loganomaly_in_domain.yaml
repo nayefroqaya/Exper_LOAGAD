@@ -1,0 +1,55 @@
+#data_dir: ./dataset/BGL
+data_dir:  ../LWADLS/datasets/SP_150MB_ratio # -------------------Change here
+dataset_name:  SP_150MB_ratio                # -------------------Change here
+#log_file: .log
+embeddings: embeddings_tfidf.json
+
+# data preprocessing
+grouping:  sliding # sliding  # sliding #session
+session_level: entry
+sequential: true
+quantitative: true
+semantic: false
+
+# model configuration
+model_name: LogAnomaly
+embedding_dim: 300
+dropout: 0.1
+hidden_size: 128
+num_layers: 2
+topk: 9
+
+# optimizer configuration
+optimizer: adam
+adam_beta1: 0.9
+adam_beta2: 0.999
+epsilon: 1.0e-08
+lr: 0.001
+optim_momentum: 0.99
+scheduler: linear
+warmup_rate: 0.1
+weight_decay: 0.0
+
+# training configuration
+accumulation_step: 2
+batch_size: 64
+max_epoch: 20
+
+# common configuration
+output_dir: ./output/
+resume: false
+step_size: 120
+#<<<<<<< HEAD
+#train_size: #0.6 #0.1
+#valid_ratio: #0.1
+#=======
+#train_size: 0.6 #0.1
+#valid_ratio: 0.1
+#>>>>>>> 767da89 (update dataset portion)
+window_size: 120
+train: true
+
+# RL-style reporting only; does not change LogAnomaly training.
+fp_unit_cost: 10.0
+fn_unit_cost: 20.0
+delay_unit_cost: 5.0
