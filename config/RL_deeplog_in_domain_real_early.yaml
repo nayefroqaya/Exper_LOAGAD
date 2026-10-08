@@ -1,0 +1,52 @@
+# ============================================================
+# DeepLog - IN-DOMAIN
+# Dataset: SP_150MB_ratio
+# ============================================================
+
+# dataset configuration
+data_dir: ../LWADLS/datasets/SP_150MB_ratio
+dataset_name: SP_150MB_ratio
+embeddings: embeddings_tfidf.json
+
+# data preprocessing
+grouping: sliding
+session_level: entry
+sequential: true
+semantic: false
+quantitative: false
+
+window_size: 120
+step_size: 120
+
+# model configuration
+model_name: DeepLog
+embedding_dim: 300
+dropout: 0.1
+hidden_size: 128
+num_layers: 2
+topk: 9
+
+# optimizer configuration
+optimizer: adam
+adam_beta1: 0.9
+adam_beta2: 0.999
+max_epoch: 20
+
+# common configuration
+output_dir: ./output/
+resume: false
+train: true
+remove_duplicates: true
+
+# RL-style reporting only; these values do NOT change DeepLog training.
+fp_unit_cost: 10.0
+fn_unit_cost: 20.0
+delay_unit_cost: 5.0
+
+# Real prefix-based early-detection evaluation
+real_early_detection: true
+
+# 1 = evaluate every possible prefix step (exact first-detection step).
+# Larger values are faster but approximate the first detection step.
+early_eval_stride: 1
+
