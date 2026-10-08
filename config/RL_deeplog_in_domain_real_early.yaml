@@ -4,12 +4,12 @@
 # ============================================================
 
 # dataset configuration
-data_dir: ../LWADLS/datasets/HDFS
-dataset_name: HDFS
+data_dir: ../LWADLS/datasets/BGL
+dataset_name: BGL
 embeddings: embeddings_tfidf.json
 
 # data preprocessing
-grouping: session
+grouping: sliding
 session_level: entry
 sequential: true
 semantic: false
