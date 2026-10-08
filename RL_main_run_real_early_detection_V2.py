@@ -232,7 +232,7 @@ def _rl_f1(p, r):
     return (2.0 * p * r / (p + r)) if (p + r) else 0.0
 
 
-def _rl_predict_single_prefix(
+def _rl_predict_single_unsupervised_prefix(
     trainer,
     prefix_sequence,
     true_label,
@@ -240,29 +240,16 @@ def _rl_predict_single_prefix(
     args,
     device,
     logger,
-    is_unsupervised,
 ):
     """
-    Predict one sequence prefix using the SAME already-trained baseline.
-
-    Automatic behavior:
-      - DeepLog / LogAnomaly -> trainer.predict_unsupervised()
-      - LogRobust / CNN / NeuralLog -> trainer.predict_supervised()
+    Run the EXISTING unsupervised prediction rule on one sequence prefix.
 
     Returns:
-        1    predicted anomaly
-        0    predicted normal
-        None prefix cannot be evaluated
+        1 -> predicted anomaly
+        0 -> predicted normal
+        None -> prefix is too short / cannot be evaluated
     """
-    prefix_sequence = list(prefix_sequence)
-
-    # Next-event methods need at least history_size context events + 1 event to predict.
-    if is_unsupervised:
-        history_size = int(getattr(args, "history_size", 1))
-        if len(prefix_sequence) <= history_size:
-            return None
-
-    prefix_data = [(prefix_sequence, true_label)]
+    prefix_data = [(list(prefix_sequence), true_label)]
 
     try:
         sequentials, quantitatives, semantics, labels, idxs, session_labels = sliding_window(
@@ -273,7 +260,7 @@ def _rl_predict_single_prefix(
             semantic=args.semantic,
             quantitative=args.quantitative,
             sequential=args.sequential,
-            is_unsupervised=is_unsupervised,
+            is_unsupervised=True,
             logger=logger,
         )
     except Exception:
@@ -288,7 +275,80 @@ def _rl_predict_single_prefix(
         semantics=semantics,
         labels=labels,
         idxs=idxs,
-        is_unsupervised=is_unsupervised,
+        is_unsupervised=True,
+        remove_duplicates=False,
+    )
+
+    if len(prefix_dataset) == 0:
+        return None
+
+    # One original sequence is being evaluated here.
+    try:
+        acc_p, f1_p, pre_p, rec_p = trainer.predict_unsupervised(
+            prefix_dataset,
+            session_labels,
+            topk=args.topk,
+            device=device,
+            is_valid=False,
+            num_sessions=[1],
+        )
+    except Exception:
+        return None
+
+    true_binary = int(_rl_binary_labels([true_label])[0])
+
+    # For a single anomalous sequence:
+    # recall = 1 iff it was detected as anomaly.
+    if true_binary == 1:
+        return 1 if _rl_as_fraction(rec_p) >= 0.5 else 0
+
+    # For a single normal sequence:
+    # accuracy = 1 iff it was predicted normal.
+    return 0 if _rl_as_fraction(acc_p) >= 0.5 else 1
+
+
+
+def _rl_predict_single_logrobust_prefix(
+    trainer,
+    prefix_sequence,
+    true_label,
+    vocab,
+    args,
+    device,
+    logger,
+):
+    """
+    LogRobust only:
+    evaluate one prefix with the existing supervised prediction path.
+    Training/model parameters are unchanged.
+    """
+    prefix_data = [(list(prefix_sequence), true_label)]
+
+    try:
+        sequentials, quantitatives, semantics, labels, idxs, session_labels = sliding_window(
+            prefix_data,
+            vocab=vocab,
+            window_size=args.history_size,
+            is_train=False,
+            semantic=args.semantic,
+            quantitative=args.quantitative,
+            sequential=args.sequential,
+            is_unsupervised=False,
+            logger=logger,
+        )
+    except Exception:
+        return None
+
+    if sequentials is None or len(sequentials) == 0:
+        return None
+
+    prefix_dataset = LogDataset(
+        sequentials=sequentials,
+        quantitatives=quantitatives,
+        semantics=semantics,
+        labels=labels,
+        idxs=idxs,
+        is_unsupervised=False,
         remove_duplicates=False,
     )
 
@@ -296,33 +356,17 @@ def _rl_predict_single_prefix(
         return None
 
     try:
-        if is_unsupervised:
-            acc_p, f1_p, pre_p, rec_p = trainer.predict_unsupervised(
-                prefix_dataset,
-                session_labels,
-                topk=args.topk,
-                device=device,
-                is_valid=False,
-                num_sessions=[1],
-            )
-        else:
-            acc_p, f1_p, pre_p, rec_p = trainer.predict_supervised(
-                prefix_dataset,
-                session_labels,
-                device=device,
-            )
+        acc_p, f1_p, pre_p, rec_p = trainer.predict_supervised(
+            prefix_dataset,
+            session_labels,
+            device=device,
+        )
     except Exception:
         return None
 
-    true_binary = int(_rl_binary_labels([true_label])[0])
-
-    # Early-detection evaluation is applied to anomalous sequences.
-    # For a single positive sample, recall=1 iff the model detects it.
-    if true_binary == 1:
-        return 1 if _rl_as_fraction(rec_p) >= 0.5 else 0
-
-    # Kept for completeness if normal-prefix evaluation is added later.
-    return 0 if _rl_as_fraction(acc_p) >= 0.5 else 1
+    # Prefixes are evaluated only for truly anomalous test sequences here.
+    # With one positive sample, recall=1 means LogRobust predicted anomaly.
+    return 1 if _rl_as_fraction(rec_p) >= 0.5 else 0
 
 
 def compute_real_early_detection_metrics(
@@ -333,21 +377,21 @@ def compute_real_early_detection_metrics(
     args,
     device,
     logger,
-    is_unsupervised,
 ):
     """
-    REAL prefix-based early detection for supported baseline models.
+    REAL prefix-based early detection.
 
-    Unsupervised / next-event:
-        DeepLog, LogAnomaly
-        Earliest evaluable prefix = history_size + 1.
+    DeepLog / LogAnomaly:
+      - use the existing unsupervised next-event prediction path.
 
-    Supervised sequence classifiers:
-        LogRobust, CNN, NeuralLog
-        Prefixes start from the first event and are padded/processed by the
-        same sliding_window() function used by the original implementation.
+    LogRobust:
+      - use the existing supervised prediction path on padded prefixes.
 
-    The trained model is NOT retrained or modified.
+    For every anomalous test sequence, record the first prefix that the
+    trained baseline predicts as anomalous. No retraining is performed.
+
+    Multiplicity from num_sessions is preserved so duplicate test sessions
+    receive the same weighting as the original full-sequence evaluation.
     """
     stride = max(1, int(getattr(args, "early_eval_stride", 1)))
 
@@ -357,18 +401,18 @@ def compute_real_early_detection_metrics(
     weighted_detection_ratios = []
 
     anomaly_unique = 0
-    not_evaluable = 0
-
-    mode_name = "unsupervised next-event" if is_unsupervised else "supervised prefix classifier"
 
     print("\n" + "=" * 60)
     print("REAL PREFIX-BASED EARLY DETECTION EVALUATION")
     print("=" * 60)
     print("Model               :", args.model_name)
-    print("Evaluation mode     :", mode_name)
-    print("Prefix stride       :", stride)
-    print("Method              : first prefix flagged anomalous")
-    print("Training            : unchanged; prefix inference only")
+    print("Prefix stride        :", stride)
+    print("Method               : first prefix flagged anomalous")
+    if args.model_name == "LogRobust":
+        print("Prediction mode       : supervised LogRobust")
+    else:
+        print("Prediction mode       : unsupervised next-event")
+    print("This uses the trained baseline model; no retraining is performed.")
 
     for i, (sequence, true_label) in enumerate(test_data):
         true_binary = int(_rl_binary_labels([true_label])[0])
@@ -376,44 +420,54 @@ def compute_real_early_detection_metrics(
             continue
 
         anomaly_unique += 1
-
         multiplicity = int(num_sessions[i]) if i < len(num_sessions) else 1
         multiplicity = max(1, multiplicity)
         total_anomalies += multiplicity
 
         seq = list(sequence)
         seq_len = len(seq)
-
         if seq_len == 0:
-            not_evaluable += multiplicity
             continue
 
-        if is_unsupervised:
+        if args.model_name == "LogRobust":
+            # Supervised LogRobust can evaluate a short prefix because
+            # sliding_window() pads it to history_size.
+            first_evaluable = 1
+        else:
+            # DeepLog/LogAnomaly need history_size context events plus
+            # one next event for next-event prediction.
             first_evaluable = int(getattr(args, "history_size", 1)) + 1
             if seq_len < first_evaluable:
-                # Do NOT pretend the full sequence is an early prediction.
-                not_evaluable += multiplicity
                 continue
-        else:
-            first_evaluable = 1
 
+        first_detection_step = None
+
+        # Exact scan when stride=1.
         candidate_steps = list(range(first_evaluable, seq_len + 1, stride))
         if not candidate_steps or candidate_steps[-1] != seq_len:
             candidate_steps.append(seq_len)
 
-        first_detection_step = None
-
         for prefix_len in candidate_steps:
-            pred = _rl_predict_single_prefix(
-                trainer=trainer,
-                prefix_sequence=seq[:prefix_len],
-                true_label=true_label,
-                vocab=vocab,
-                args=args,
-                device=device,
-                logger=logger,
-                is_unsupervised=is_unsupervised,
-            )
+            if args.model_name == "LogRobust":
+                pred = _rl_predict_single_logrobust_prefix(
+                    trainer=trainer,
+                    prefix_sequence=seq[:prefix_len],
+                    true_label=true_label,
+                    vocab=vocab,
+                    args=args,
+                    device=device,
+                    logger=logger,
+                )
+            else:
+                pred = _rl_predict_single_unsupervised_prefix(
+                    trainer=trainer,
+                    prefix_sequence=seq[:prefix_len],
+                    true_label=true_label,
+                    vocab=vocab,
+                    args=args,
+                    device=device,
+                    logger=logger,
+                )
 
             if pred == 1:
                 first_detection_step = prefix_len
@@ -437,12 +491,9 @@ def compute_real_early_detection_metrics(
             )
 
     if weighted_detection_steps:
-        detected_ratios = np.asarray(weighted_detection_ratios, dtype=float)
         avg_step = float(np.mean(weighted_detection_steps))
-        avg_ratio = float(np.mean(detected_ratios))
-
-        # IMPORTANT: match the RL definition:
-        # EDR@k = anomalies detected by k% / ALL anomalies.
+        avg_ratio = float(np.mean(weighted_detection_ratios))
+        detected_ratios = np.asarray(weighted_detection_ratios, dtype=float)
         edr25 = float(np.sum(detected_ratios <= 0.25) / max(1, total_anomalies))
         edr50 = float(np.sum(detected_ratios <= 0.50) / max(1, total_anomalies))
         edr75 = float(np.sum(detected_ratios <= 0.75) / max(1, total_anomalies))
@@ -465,8 +516,6 @@ def compute_real_early_detection_metrics(
         "edr50": float(edr50),
         "edr75": float(edr75),
         "stride": int(stride),
-        "not_evaluable": int(not_evaluable),
-        "evaluation_mode": mode_name,
     }
 
     print("\nREAL early-detection result:")
@@ -478,8 +527,6 @@ def compute_real_early_detection_metrics(
     print(f"EDR@25                : {result['edr25']:.4f}")
     print(f"EDR@50                : {result['edr50']:.4f}")
     print(f"EDR@75                : {result['edr75']:.4f}")
-    if result["not_evaluable"] > 0:
-        print(f"Not evaluable prefixes: {result['not_evaluable']}")
 
     return result
 
@@ -562,7 +609,7 @@ def print_rl_style_test_metrics(
         edr50 = real_early["edr50"]
         edr75 = real_early["edr75"]
         early_method = (
-            f"REAL prefix evaluation ({real_early['evaluation_mode']}): "
+            f"REAL prefix evaluation for {args.model_name}: "
             f"first prefix flagged anomalous (stride={real_early['stride']})."
         )
     else:
@@ -657,7 +704,7 @@ def print_rl_style_test_metrics(
     lines.append("")
     lines.append(
         "[Note] Early-detection values above are measured from actual prefix "
-        "inference using the trained baseline, not fixed static assumptions."
+        "inference, not fixed static assumptions."
     )
 
     report = "\n".join(lines)
@@ -888,24 +935,14 @@ def train_and_eval(args: argparse.Namespace,
     logger.info(f"Test Result:: Acc: {acc:.4f}, Precision: {pre:.4f}, Recall: {rec:.4f}, F1: {f1:.4f}")
 
     # ------------------------------------------------------------
-    # REAL early detection - AUTOMATIC by model type.
-    #
-    # DeepLog / LogAnomaly          -> unsupervised prefix evaluation
-    # LogRobust / CNN / NeuralLog   -> supervised prefix evaluation
-    #
-    # No retraining and no model-specific Python switch is needed.
+    # REAL early-detection evaluation.
+    # DeepLog / LogAnomaly -> existing unsupervised prediction path
+    # LogRobust            -> existing supervised prediction path
+    # No retraining or model change.
     # ------------------------------------------------------------
     real_early = None
-    supported_real_early_models = {
-        "DeepLog",
-        "LogAnomaly",
-        "LogRobust",
-        "CNN",
-        "NeuralLog",
-    }
-
     if (
-        args.model_name in supported_real_early_models
+        (is_unsupervised or args.model_name == "LogRobust")
         and bool(getattr(args, "real_early_detection", True))
     ):
         real_early = compute_real_early_detection_metrics(
@@ -916,12 +953,6 @@ def train_and_eval(args: argparse.Namespace,
             args=args,
             device=device,
             logger=logger,
-            is_unsupervised=is_unsupervised,
-        )
-    elif args.model_name not in supported_real_early_models:
-        print(
-            f"[INFO] Real prefix early detection is not enabled for "
-            f"{args.model_name} in this baseline runner."
         )
 
     print_rl_style_test_metrics(
