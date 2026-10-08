@@ -4,12 +4,12 @@
 # ============================================================
 
 # dataset configuration
-data_dir: ../LWADLS/datasets/SP_150MB_ratio
-dataset_name: SP_150MB_ratio
+data_dir: ../LWADLS/datasets/HDFS
+dataset_name: HDFS
 embeddings: embeddings_tfidf.json
 
 # data preprocessing
-grouping: sliding
+grouping: session
 session_level: entry
 sequential: true
 semantic: false
