@@ -1,6 +1,6 @@
 #data_dir: ./dataset/BGL
-data_dir:  ../LWADLS/datasets/TH_1G # -------------------Change here
-dataset_name:  TH_1G                # -------------------Change here
+data_dir:  ../LWADLS/datasets/SP_150MB_ratio # -------------------Change here
+dataset_name:  SP_150MB_ratio                # -------------------Change here
 #log_file: .log
 embeddings: embeddings_tfidf.json
 
@@ -39,17 +39,19 @@ max_epoch: 20
 output_dir: ./output/
 resume: false
 step_size: 120
-#<<<<<<< HEAD
 #train_size: #0.6 #0.1
 #valid_ratio: #0.1
-#=======
 #train_size: 0.6 #0.1
 #valid_ratio: 0.1
-#>>>>>>> 767da89 (update dataset portion)
 window_size: 120
 train: true
 
-# RL-style reporting only; does not change LogAnomaly training.
+# RL-compatible reporting only; training/model are unchanged
+real_early_detection: true
+early_eval_stride: 1
+
+# Same cost convention as RL evaluation
 fp_unit_cost: 10.0
 fn_unit_cost: 20.0
 delay_unit_cost: 5.0
+
