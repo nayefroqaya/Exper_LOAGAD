@@ -1,12 +1,12 @@
 # dataset configuration
 #data_dir: ./datasets/SP_150MB_ratio
-data_dir:  ../LWADLS/datasets/HDFS # -------------------Change here
-dataset_name:  HDFS     # -------------------Change here
+data_dir:  ../LWADLS/datasets/SP_150MB_ratio # -------------------Change here
+dataset_name:  SP_150MB_ratio     # -------------------Change here
 #log_file: .log
 embeddings: embeddings_tfidf.json
 
 # data preprocessing
-grouping: session # sliding  # sliding #session
+grouping: sliding # sliding  # sliding #session
 session_level: entry
 sequential: true
 semantic: true
@@ -46,7 +46,8 @@ resume: false
 #valid_ratio: 0.1
 train: true
 
-# RL-style reporting costs only
+# RL-compatible reporting only; LogRobust model/training unchanged
 fp_unit_cost: 10.0
 fn_unit_cost: 20.0
 delay_unit_cost: 5.0
+
