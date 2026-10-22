@@ -647,6 +647,8 @@ def _la_print_complete_report(
     fn,
     early_metrics,
     note,
+    evaluation_time_min,
+    training_time_min,
     score_note="Raw anomaly scores are not exposed by the current predict_unsupervised() API.",
 ):
     """
@@ -786,6 +788,73 @@ def _la_print_complete_report(
         print("Saved final metrics:", os.path.abspath(out_path))
     except Exception as exc:
         print("[WARNING] Could not save final metrics report:", exc)
+
+    # ============================================================
+    # Compact paper-table summary
+    # ============================================================
+    compact_lines = [
+        "",
+        "=" * 80,
+        f"{variant_name} - COMPACT PAPER RESULTS  # {dataset_name}",
+        "=" * 80,
+        f"Precision           : {m['precision']:.4f}",
+        f"Recall              : {m['recall']:.4f}",
+        f"F1                  : {m['f1']:.4f}",
+        f"Detection Coverage  : {early_metrics['coverage']:.4f}",
+        f"Avg Det. Ratio      : {early_metrics['avg_ratio']:.4f}",
+        f"EDR@25              : {early_metrics['edr25']:.4f}",
+        f"EDR@50              : {early_metrics['edr50']:.4f}",
+        f"EDR@75              : {early_metrics['edr75']:.4f}",
+        f"False-positive Cost : {fp_cost:.4f}",
+        f"False-negative Cost : {fn_cost:.4f}",
+        f"Delay Cost          : {delay_cost:.4f}",
+        f"Total Cost          : {total_cost:.4f}",
+        f"Evaluation Time     : {evaluation_time_min:.4f} min",
+        f"Training Time       : {training_time_min:.4f} min",
+        "=" * 80,
+    ]
+    compact_report = "\n".join(compact_lines)
+    print(compact_report)
+
+    # Save compact TXT
+    try:
+        compact_txt = os.path.join(
+            args.output_dir,
+            f"RL_{safe_variant}_{dataset_name}_compact_results.txt",
+        )
+        with open(compact_txt, "w", encoding="utf-8") as f:
+            f.write(compact_report + "\n")
+        print("Saved compact results:", os.path.abspath(compact_txt))
+    except Exception as exc:
+        print("[WARNING] Could not save compact TXT:", exc)
+
+    # Save one-row CSV for direct paper-table use.
+    try:
+        compact_csv = os.path.join(
+            args.output_dir,
+            f"RL_{safe_variant}_{dataset_name}_compact_results.csv",
+        )
+        pd.DataFrame([{
+            "Method": variant_name,
+            "Dataset": dataset_name,
+            "Precision": m["precision"],
+            "Recall": m["recall"],
+            "F1": m["f1"],
+            "Detection Coverage": early_metrics["coverage"],
+            "Avg Det. Ratio": early_metrics["avg_ratio"],
+            "EDR@25": early_metrics["edr25"],
+            "EDR@50": early_metrics["edr50"],
+            "EDR@75": early_metrics["edr75"],
+            "False-positive Cost": fp_cost,
+            "False-negative Cost": fn_cost,
+            "Delay Cost": delay_cost,
+            "Total Cost": total_cost,
+            "Evaluation Time (min)": evaluation_time_min,
+            "Training Time (min)": training_time_min,
+        }]).to_csv(compact_csv, index=False)
+        print("Saved compact CSV:", os.path.abspath(compact_csv))
+    except Exception as exc:
+        print("[WARNING] Could not save compact CSV:", exc)
 
     return m
 
@@ -1323,6 +1392,7 @@ def train_and_eval(args: argparse.Namespace,
     # LogAnomaly-Early: classification + timing come from the
     # sequential prefix decision rule, not the full-sequence result above.
     # ============================================================
+    start_early_evaluation_time = time.time()
     early_tp, early_tn, early_fp, early_fn, early_metrics = _la_evaluate_sequential_early(
         trainer=trainer,
         test_data=data,
@@ -1331,6 +1401,9 @@ def train_and_eval(args: argparse.Namespace,
         args=args,
         device=device,
     )
+    early_evaluation_time_min = (
+        time.time() - start_early_evaluation_time
+    ) / 60.0
 
     _la_print_complete_report(
         args=args,
@@ -1349,6 +1422,8 @@ def train_and_eval(args: argparse.Namespace,
             "At test time, prefixes are evaluated sequentially and the first "
             "anomalous prefix triggers the alert."
         ),
+        evaluation_time_min=early_evaluation_time_min,
+        training_time_min=train_time_min,
     )
 
     return train_time_min, test_time_min, acc, f1, pre, rec
