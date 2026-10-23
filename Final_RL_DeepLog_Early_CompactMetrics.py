@@ -775,8 +775,6 @@ def _dl_print_report(
         print("[WARNING] Could not save all-metrics TXT:", exc)
 
     compact_lines = [
-        "",
-        "=" * 80,
         f"{variant_name} - COMPACT PAPER RESULTS  # {dataset_name}",
         "=" * 80,
         f"Precision           : {m['precision']:.4f}",
@@ -795,7 +793,7 @@ def _dl_print_report(
         f"Training Time       : {training_time_min:.4f} min",
         "=" * 80,
     ]
-    compact_report = "\\n".join(compact_lines)
+    compact_report = "\n".join(compact_lines)
     print(compact_report)
 
     try:
