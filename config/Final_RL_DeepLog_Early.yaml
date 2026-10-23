@@ -1,0 +1,59 @@
+# dataset configuration
+#data_dir: ./datasets/SP_150MB_ratio
+data_dir:  ../LWADLS/datasets/BGL
+dataset_name:  BGL     # -------------------Change here
+#log_file: .log
+embeddings: embeddings_tfidf.json
+
+# data preprocessing
+grouping:  sliding  # sliding  # sliding #session . # -------------------Change here for HDFS session
+session_level: entry
+sequential: true
+semantic: false
+quantitative: false
+window_size: 120
+step_size: 120
+history_size: 120
+
+# model configuration
+model_name: DeepLog
+embedding_dim: 300
+dropout: 0.1
+hidden_size: 128
+num_layers: 2
+topk: 9
+
+# optimizer configuration
+optimizer: adam
+adam_beta1: 0.9
+adam_beta2: 0.999
+max_epoch: 20
+
+# common configuration
+output_dir: ./output/
+resume: false
+#train_size: 0.6 #0.01
+#valid_ratio: 0.1
+train: true
+remove_duplicates: true
+
+# DeepLog-Early: same unsupervised next-event objective + prefix-aware TRAIN augmentation
+real_early_detection: true
+early_eval_stride: 1
+
+# Same cost convention as RLADLS
+fp_unit_cost: 10.0
+fn_unit_cost: 20.0
+delay_unit_cost: 5.0
+
+
+experiment_variant: DeepLog-Early
+
+# TRAIN-only prefix-aware next-event augmentation
+early_train_prefix_fractions:
+  - 0.25
+  - 0.50
+  - 0.75
+
+# Final TEST sequential prefix inference
+early_prefix_min_events: 2
