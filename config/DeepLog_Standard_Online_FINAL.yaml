@@ -1,7 +1,9 @@
 # Original DeepLog predictor: one training/checkpoint, two test evaluation modes.
 # Dataset selection and root can be overridden from command line.
 dataset_name: BGL
-data_dir: /storage/home/roqaya/LWADLS/datasets
+#data_dir: /storage/home/roqaya/LWADLS/datasets
+data_dir: /storage/home/roqaya/Exper_LOAGAD/dataset/BGL
+
 embeddings: embeddings_tfidf.json
 # BGL/TH/SP fixed non-overlapping 120-event sequences; for HDFS use grouping: session
 grouping: sliding
