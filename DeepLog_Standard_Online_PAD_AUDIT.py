@@ -431,6 +431,13 @@ def _dl_neutral_label_prediction(trainer, candidate_sequence, vocab, args, devic
         _diag_seen = getattr(_dl_neutral_label_prediction, '_diag_seen', 0)
         if _diag_seen < 12:
             context_ids = np.asarray(seqs[0], dtype=np.int64)
+            if getattr(_dl_neutral_label_prediction, '_oov_debug', 0) < 10:
+                print("\n[OOV DIAGNOSTIC]")
+                print("First real context event:", candidate_sequence[-2])
+                print("Mapped event ID:", vocab.get_event(candidate_sequence[-2]))
+                print("Vocabulary size:", len(vocab))
+                print("Padding ID:", vocab.get_event(vocab.pad_token))
+                _dl_neutral_label_prediction._oov_debug = (getattr(_dl_neutral_label_prediction, '_oov_debug', 0) + 1)
             class_count = int(trainer.num_classes)
             invalid_context = context_ids[context_ids >= class_count]
             try:
