@@ -19,11 +19,13 @@ from random import seed
 import torch
 import yaml
 from sklearn.utils import shuffle
-from logadempirical.data.data_loader import process_dataset_from_df  #process_dataset
+#from logadempirical.data.data_loader import process_dataset_from_df  #process_dataset
+from logadempirical.data.data_loader_LABELFIX import process_dataset_from_df
+from logadempirical.data.feature_extraction_LABELFIX import load_features, sliding_window
 
 #from logadempirical.data import process_dataset
 from logadempirical.data.vocab import Vocab
-from logadempirical.data.feature_extraction import load_features, sliding_window
+#from logadempirical.data.feature_extraction import load_features, sliding_window
 from logadempirical.data.dataset import LogDataset, MaskedDataset
 from logadempirical.helpers import arg_parser, get_optimizer
 from logadempirical.models import get_model, ModelConfig
