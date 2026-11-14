@@ -1226,6 +1226,12 @@ def run(args):
                             embedding_dim=args.embedding_dim,
                             is_unsupervised=is_unsupervised,
                             logger=logger)
+    print("DEBUG: DeepLog vocabulary size:", len(log_vocab))
+
+    if len(log_vocab) <= 2:
+        raise RuntimeError("DeepLog vocabulary contains only 2 classes. "
+                           "Check vocabulary construction and the saved vocabulary cache.")
+
     model = build_model(args, vocab_size=len(log_vocab))
     train_time, test_time, acc, f1, precision, recall= train_and_eval(args,
                    train_path,
