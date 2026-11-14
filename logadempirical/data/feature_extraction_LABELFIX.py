@@ -1,0 +1,167 @@
+from collections import Counter
+import pickle
+from tqdm import tqdm
+from typing import List, Tuple, Optional, Any
+import numpy as np
+import pandas as pd
+
+
+def load_features(data_path, is_unsupervised=True, min_len=0, is_train=True):
+    with open(data_path, 'rb') as f:
+        data = pickle.load(f)
+    # If it's a DataFrame, show the columns
+#    xx = pd.DataFrame(data)
+#    print(xx.columns)
+
+    #print(data.columns)
+#    exit()
+
+    logs = []
+    no_abnormal = 0
+
+    for seq in data:
+        # Handle nested 'sequential' key
+        seq_data = seq.get('sequential', seq)
+
+        event_templates = seq_data['EventTemplate']
+        labels = seq_data['Label']
+
+        # Skip short sequences
+        if len(event_templates) < min_len:
+            continue
+
+        # Determine label
+        if not isinstance(labels, int):
+            label = max(labels)
+        else:
+            label = labels
+
+        # Training logic
+        if is_train:
+            if is_unsupervised:
+                if label == 0:
+                    logs.append((event_templates, label))
+                else:
+                    no_abnormal += 1
+            else:
+                if label > 0:
+                    no_abnormal += 1
+                logs.append((event_templates, label))
+        else:  # test/validation
+            if label > 0:
+                no_abnormal += 1
+            logs.append((event_templates, label))
+
+    print("Number of abnormal sessions:", no_abnormal)
+
+    if not logs:
+        raise ValueError(
+            f"No eligible sequences in {data_path} after filtering "
+            f"(is_train={is_train}, is_unsupervised={is_unsupervised}). "
+            "Check generated train.pkl labels and session boundaries."
+        )
+    logs_len = [len(log[0]) for log in logs]
+    return logs, {"min": min(logs_len), "max": max(logs_len), "mean": np.mean(logs_len)}
+
+
+
+def sliding_window(data: List[Tuple[List[str], int]],
+                   window_size: int = 120,
+                   is_train: bool = True,
+                   vocab: Optional[Any] = None,
+                   is_unsupervised: bool = True,
+                   sequential: bool = False,
+                   quantitative: bool = False,
+                   semantic: bool = False,
+                   logger: Optional[Any] = None,
+                   # remove_duplicates: bool = False
+                   ) -> Any:
+    """
+    Sliding window for log sequence
+    Parameters
+    ----------
+    data: List[Tuple[List[str], int]]: List of log sequences
+    window_size: int: Size of sliding window
+    is_train: bool: training mode or not
+    vocab: Optional[Any]: Vocabulary
+    is_unsupervised: bool: Whether the model is unsupervised or not
+    sequential: bool: Whether to use sequential features
+    quantitative: bool: Whether to use quantitative features
+    semantic: bool: Whether to use semantic features
+    logger: Optional[Any]: Logger
+    # remove_duplicates: bool: Whether to remove duplicate events
+
+    Returns
+    -------
+    lists of sequential, quantitative, semantic features, and labels
+    """
+    log_sequences = []
+    session_labels = {}
+    unique_ab_events = set()
+
+    for idx, (templates, labels) in tqdm(enumerate(data), total=len(data),
+                                         desc=f"Sliding window with size {window_size}"):
+        line = list(templates)
+        line = line + [vocab.pad_token] * (window_size - len(line) + is_unsupervised)
+        if isinstance(labels, list):
+            labels = [0] * (window_size - len(labels) + is_unsupervised) + labels
+        session_labels[idx] = labels if isinstance(labels, int) else max(labels)
+        for i in range(len(line) - window_size if is_unsupervised else len(line) - window_size + 1):
+            if is_unsupervised:
+                label = vocab.get_event(line[i + window_size],
+                                        use_similar=quantitative)  # use_similar only for LogAnomaly
+            else:
+                if not isinstance(labels, int):
+                    label = max(labels[i: i + window_size])
+                else:
+                    label = labels
+            seq = line[i: i + window_size]
+            sequential_pattern = [vocab.get_event(event, use_similar=quantitative) for event in seq]
+            semantic_pattern = None
+            if semantic:
+                semantic_pattern = [vocab.get_embedding(event) for event in seq]
+            quantitative_pattern = None
+            if quantitative:
+                quantitative_pattern = [0] * len(vocab)
+                log_counter = Counter(sequential_pattern)
+                for key in log_counter:
+                    try:
+                        quantitative_pattern[key] = log_counter[key]
+                    except Exception as _:
+                        pass  # ignore unseen events or padding key
+
+            sequence = {'sequential': sequential_pattern}
+            if quantitative:
+                sequence['quantitative'] = quantitative_pattern
+            if semantic:
+                sequence['semantic'] = semantic_pattern
+            sequence['label'] = label
+            sequence['idx'] = idx
+            log_sequences.append(sequence)
+
+    if is_train and not is_unsupervised:
+        normal_dict = {hash(tuple(seq['sequential'])): 0 for seq in log_sequences if seq['label'] == 0}
+        for i, seq in enumerate(log_sequences):
+            try:
+                log_sequences[i]['label'] = normal_dict[hash(tuple(seq['sequential']))]
+            except KeyError:
+                pass
+
+    sequentials, quantitatives, semantics = None, None, None
+    if sequential:
+        sequentials = [seq['sequential'] for seq in log_sequences]
+    if quantitative:
+        quantitatives = [seq['quantitative'] for seq in log_sequences]
+    if semantic:
+        semantics = [seq['semantic'] for seq in log_sequences]
+    labels = [seq['label'] for seq in log_sequences]
+    sequence_idxs = [seq['idx'] for seq in log_sequences]
+    logger.info(f"Number of sequences: {len(labels)}")
+    if not is_unsupervised:
+        logger.info(f"Number of normal sequence: {len(labels) - sum(labels)}")
+        logger.info(f"Number of abnormal sequence: {sum(labels)}")
+
+    logger.warning(f"Number of unique abnormal events: {len(unique_ab_events)}")
+    logger.info(f"Number of abnormal sessions: {sum(session_labels.values())}/{len(session_labels)}")
+
+    return sequentials, quantitatives, semantics, labels, sequence_idxs, session_labels
