@@ -940,6 +940,34 @@ def train_and_eval(args: argparse.Namespace,
     #data = shuffle(data)
     #n_valid = int(len(data) * args.valid_ratio)
     #train_data, valid_data = data[:-n_valid], data[-n_valid:]
+    import pickle
+    import numpy as np
+
+    with open(train_path, "rb") as f:
+        sessions = pickle.load(f)
+
+    normal = 0
+    abnormal = 0
+    unexpected = 0
+
+    for session in sessions:
+        labels = np.asarray(session["Label"]).ravel()
+
+        if labels.size == 0:
+            unexpected += 1
+        elif np.all(labels == 0):
+            normal += 1
+        elif np.any(labels == 1):
+            abnormal += 1
+        else:
+            unexpected += 1
+
+    print("Total generated training sessions:", len(sessions))
+    print("Fully normal sessions:", normal)
+    print("Sessions containing anomalies:", abnormal)
+    print("Unexpected or empty labels:", unexpected)
+    print("First session labels:", sessions[0]["Label"] if sessions else "EMPTY")
+
     train_data, train_stat = load_features(train_path, is_unsupervised=is_unsupervised, is_train=True)
     valid_data, valid_stat = load_features(valid_path, is_unsupervised=is_unsupervised, is_train=False)
     logger.info(f"Train data statistics: {train_stat}")
