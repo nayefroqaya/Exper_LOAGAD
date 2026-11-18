@@ -132,6 +132,7 @@ def main():
     p.add_argument('--max_epoch',type=int,default=100); p.add_argument('--batch_size',type=int,default=1024); p.add_argument('--lr',type=float,default=.001); p.add_argument('--patience',type=int,default=10); p.add_argument('--num_candidates',type=int,default=9); p.add_argument('--persistence',default='1,2,3,4,5'); p.add_argument('--seed',type=int,default=123)
     for name in ('fp','fn','delay'): p.add_argument(f'--{name}-weight',type=float,default=1.)
     p.add_argument('--output_dir',default='deeplog_runs')
+    p.add_argument('--eval-only',action='store_true',help='Reuse existing checkpoint; verify saved configuration and vocabulary')
     a=p.parse_args(); ps=sorted(set(map(int,a.persistence.split(','))))
     if min(a.history_size,a.max_epoch,a.batch_size,a.num_candidates,a.patience,*ps)<1: p.error('positive hyperparameters required')
     from logadempirical.logdeep.models.lstm import deeplog
@@ -154,32 +155,47 @@ def main():
     vd=Windows([encode(s,v) for _,s,y in val if not y],a.history_size)
     if not len(vd): raise ValueError('No normal validation windows')
     vl=DataLoader(vd,batch_size=a.batch_size); out=Path(a.output_dir)/a.dataset_name; out.mkdir(parents=True,exist_ok=True)
-    best=float('inf'); stale=0
-    for epoch in range(a.max_epoch):
-        model.train()
-        for x,y in tqdm(loader,desc=f'Train {epoch+1}/{a.max_epoch}'):
-            opt.zero_grad(); logits,_=model([x.to(device)],device); loss=lossfn(logits,y.to(device)); loss.backward(); opt.step()
-        model.eval(); total=0.; count=0
-        with torch.inference_mode():
-            for x,y in vl:
-                x=x.to(device); y=y.to(device); valid=y<len(v)+1
-                if valid.any():
-                    logits,_=model([x[valid]],device); total+=torch.nn.functional.cross_entropy(logits,y[valid],reduction='sum').item(); count+=int(valid.sum())
-        if not count: raise ValueError('No in-vocabulary normal validation targets')
-        score=total/count; print(f'Epoch {epoch+1}: validation loss {score:.6f}',flush=True)
-        if score<best:
-            best=score; stale=0; torch.save(model.state_dict(),out/'model_best.pt')
-        else: stale+=1
-        if stale>=a.patience: break
+    if a.eval_only:
+        saved=json.loads((out/'config.json').read_text())
+        for key in ('dataset_name','data_root','id_column','event_column','label_column','order_column','history_size','hidden_size','num_layers','embedding_dim','seed'):
+            if saved.get(key)!=getattr(a,key): raise ValueError(f'Checkpoint configuration mismatch: {key}')
+        if json.loads((out/'vocabulary.json').read_text())!=v:
+            raise ValueError('Checkpoint vocabulary mismatch')
+        if not (out/'model_best.pt').is_file(): raise FileNotFoundError(out/'model_best.pt')
+    else:
+        best=float('inf'); stale=0
+        for epoch in range(a.max_epoch):
+            model.train()
+            for x,y in tqdm(loader,desc=f'Train {epoch+1}/{a.max_epoch}'):
+                opt.zero_grad(); logits,_=model([x.to(device)],device); loss=lossfn(logits,y.to(device)); loss.backward(); opt.step()
+            model.eval(); total=0.; count=0
+            with torch.inference_mode():
+                for x,y in vl:
+                    x=x.to(device); y=y.to(device); valid=y<len(v)+1
+                    if valid.any():
+                        logits,_=model([x[valid]],device); total+=torch.nn.functional.cross_entropy(logits,y[valid],reduction='sum').item(); count+=int(valid.sum())
+            if not count: raise ValueError('No in-vocabulary normal validation targets')
+            score=total/count; print(f'Epoch {epoch+1}: validation loss {score:.6f}',flush=True)
+            if score<best:
+                best=score; stale=0; torch.save(model.state_dict(),out/'model_best.pt')
+            else: stale+=1
+            if stale>=a.patience: break
     model.load_state_dict(torch.load(out/'model_best.pt',map_location=device)); model.eval(); model.requires_grad_(False)
-    (out/'vocabulary.json').write_text(json.dumps(v)); (out/'config.json').write_text(json.dumps(vars(a),indent=2))
+    if not a.eval_only:
+        (out/'vocabulary.json').write_text(json.dumps(v)); (out/'config.json').write_text(json.dumps(vars(a),indent=2))
     vr=scores(model,val,v,a,device); ks=range(1,min(a.num_candidates,len(v))+1)
-    policies={'DeepLog-Single':select(val,vr,a,ks,[1]),'DeepLog-Calibrated':select(val,vr,a,ks,ps)}
+    policies={'DeepLog-Standard':select(val,vr,a,ks,[1]),'DeepLog-Online':select(val,vr,a,ks,ps)}
+    policies['DeepLog-Standard']['decision_timing']='sequence_completion'
+    policies['DeepLog-Online']['decision_timing']='first_qualifying_alert'
     # Freeze policies before loading test data.
     (out/'policies.json').write_text(json.dumps(policies,indent=2))
     test=read(root/'test_df.pkl',a); disjoint({'train':train,'val':val,'test':test}); print('Test blocks:',len(test),'without full history:',sum(len(s)<=a.history_size for _,s,_ in test))
     tr=scores(model,test,v,a,device); results={}
-    for name,policy in policies.items(): results[name]=metrics(test,alerts(tr,policy['top_k'],policy['persistence']),a)
+    for name,policy in policies.items():
+        first=alerts(tr,policy['top_k'],policy['persistence'])
+        if name=='DeepLog-Standard':
+            first=[len(events) if t is not None else None for (_,events,_),t in zip(test,first)]
+        results[name]=metrics(test,first,a)
     (out/'metrics.json').write_text(json.dumps({'policies':policies,'test':results},indent=2))
     names=list(results); print(f'{"Metric":30} {names[0]:>20} {names[1]:>20}')
     with open(out/'comparison.csv','w',newline='') as f:
